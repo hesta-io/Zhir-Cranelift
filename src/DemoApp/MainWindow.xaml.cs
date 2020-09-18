@@ -60,7 +60,7 @@ namespace DemoApp
             var builder = new StringBuilder();
 
             var imageFile = File.ReadAllBytes(file);
-            var text = ParseText(tesseractPath, imageFile, "ckb");
+            var text = ParseText(tesseractPath, imageFile, new[] { "ckb", "en", "ara" });
 
             builder.AppendLine(text);
             builder.AppendLine("----------------");
