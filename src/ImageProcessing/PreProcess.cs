@@ -24,7 +24,7 @@ namespace ImageProcessing
             Convert2Grayscale();
             CropDocument();
             CorrectContrastAndBrightness();
-            ApplyMedian();
+            RemoveNoise();
             FixOrientation();
             //Sharpen();
             
@@ -48,9 +48,18 @@ namespace ImageProcessing
             ContrastCorrection contrastFilter = new ContrastCorrection(20);
             contrastFilter.ApplyInPlace(InputImage);
         }
-        private void ApplyMedian()
+        private void RemoveNoise()
         {
-            Median filter = new Median();
+
+            //ConservativeSmoothing csf = new ConservativeSmoothing();
+            //csf.ApplyInPlace(InputImage);
+            // create filter
+            BilateralSmoothing filter = new BilateralSmoothing();
+            filter.KernelSize = 7;
+            filter.SpatialFactor = 10;
+            filter.ColorFactor = 25;
+            filter.ColorPower = 0.5;
+            // apply the filter
             filter.ApplyInPlace(InputImage);
         }
         private void FixOrientation()
@@ -92,11 +101,12 @@ namespace ImageProcessing
            QuadrilateralFinder qf = new QuadrilateralFinder();
             List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
 
-            Console.WriteLine(corners.ElementAt(0).X +" "+corners.ElementAt(0).Y);
             SimpleQuadrilateralTransformation filter =
                 new SimpleQuadrilateralTransformation(corners);
+            filter.UseInterpolation = true;
+            filter.AutomaticSizeCalculaton = true;
             InputImage = filter.Apply(InputImage);
-
+           
         }
     }
 }

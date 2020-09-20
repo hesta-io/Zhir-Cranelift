@@ -7,9 +7,9 @@ namespace ClassLibraryTesting
     {
         static void Main(string[] args)
         {
-            PreProcess pr = new PreProcess("../../../doc.jpg");
+            PreProcess pr = new PreProcess("../../../doc4.jpg");
             pr.Start();
-            pr.GetProcessedImage().Save("../../../result-doc.jpg");
+            pr.GetProcessedImage().Save("../../../result-doc4.jpg");
 
             //PreProcess pr2 = new PreProcess("../../../doc2.jpg");
             //pr2.Start();
