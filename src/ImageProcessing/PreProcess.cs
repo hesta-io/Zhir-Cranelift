@@ -1,7 +1,10 @@
 ﻿
 using AForge.Imaging;
 using AForge.Imaging.Filters;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace ImageProcessing
 {
@@ -19,10 +22,12 @@ namespace ImageProcessing
         public void Start()
         {
             Convert2Grayscale();
+            CropDocument();
             CorrectContrastAndBrightness();
             ApplyMedian();
             FixOrientation();
-            Sharpen();
+            //Sharpen();
+            
         }
         private void Convert2Grayscale()
         {
@@ -73,6 +78,25 @@ namespace ImageProcessing
         public Bitmap GetProcessedImage()
         {
             return InputImage.ToManagedImage();
+        }
+        public void CropDocument()
+        {
+
+            CannyEdgeDetector df = new CannyEdgeDetector();
+
+            UnmanagedImage diffImage = df.Apply(InputImage);
+            Dilatation DilatationFilter = new Dilatation();
+            DilatationFilter.ApplyInPlace(diffImage);
+            Sharpen();
+           
+           QuadrilateralFinder qf = new QuadrilateralFinder();
+            List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
+
+            Console.WriteLine(corners.ElementAt(0).X +" "+corners.ElementAt(0).Y);
+            SimpleQuadrilateralTransformation filter =
+                new SimpleQuadrilateralTransformation(corners);
+            InputImage = filter.Apply(InputImage);
+
         }
     }
 }
