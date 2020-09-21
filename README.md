@@ -1,2 +1,2 @@
 # ZhirAI
-NLP for Kurdish (and other) languages :)
+Cutting edge AI for Kurdish langauge :)
