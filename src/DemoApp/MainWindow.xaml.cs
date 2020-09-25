@@ -16,16 +16,36 @@ using System.Windows.Media.Imaging;
 
 namespace DemoApp
 {
+    public class Model
+    {
+        public string Name { get; set; }
+        public bool IsChecked { get; set; }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
         private CancellationTokenSource _cancellationTokenSource;
+        private Model[] _models;
 
         public MainWindow()
         {
             InitializeComponent();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            modelsList.ItemsSource = _models = Directory.EnumerateFiles("tesseract\\tessdata", "*.traineddata")
+                              .Select(f => Path.GetFileNameWithoutExtension(f))
+                              .Select(f => new Model
+                              {
+                                  Name = f,
+                                  IsChecked = false
+                              })
+                              .ToArray();
         }
 
         //private async void button_Click(object sender, RoutedEventArgs e)
@@ -60,7 +80,7 @@ namespace DemoApp
             var builder = new StringBuilder();
 
             var imageFile = File.ReadAllBytes(file);
-            var text = ParseText(tesseractPath, imageFile, new[] { "ckb", "en", "ara" });
+            var text = ParseText(tesseractPath, imageFile, _models.Where(m => m.IsChecked).Select(m => m.Name).ToArray());
 
             builder.AppendLine(text);
             builder.AppendLine("----------------");

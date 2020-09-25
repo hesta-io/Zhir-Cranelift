@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.30406.217
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApp", "src\DemoApp\DemoApp.csproj", "{E2B50E11-8364-457C-BDD7-D62BD4F8EFB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageProcessing", "src\ImageProcessing\ImageProcessing.csproj", "{58540BD8-7836-4F7D-8F4E-F600F3032E11}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageProcessing", "src\ImageProcessing\ImageProcessing.csproj", "{58540BD8-7836-4F7D-8F4E-F600F3032E11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibraryTesting", "src\ClassLibraryTesting\ClassLibraryTesting.csproj", "{F980141C-0927-47F6-81C9-29C634EEEE39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClassLibraryTesting", "src\ClassLibraryTesting\ClassLibraryTesting.csproj", "{F980141C-0927-47F6-81C9-29C634EEEE39}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

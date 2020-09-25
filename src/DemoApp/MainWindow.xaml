@@ -21,6 +21,20 @@
             <TextBlock Width="10" />
             <Button x:Name="ocrButton" Content="Run OCR on folder" Padding="10, 5"
                 Click="ocrButton_Click" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <TextBlock Width="10" />
+            <TextBlock Text="Models: " VerticalAlignment="Center" />
+            <ListBox x:Name="modelsList">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsChecked}" Content="{Binding Name}" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </StackPanel>
 
         <Grid Grid.Row="2" x:Name="progressGrid" Visibility="Collapsed" Margin="0, 0, 0, 10">
