@@ -4,7 +4,13 @@ ZhirAI is the first AI-focused company in Kurdistan. It's main focus is to digit
 
 ## Other pages
 
-1. [Training](./training.md)
+1. [Overview of tessaract engine](./tesseracticdar2007.pdf)
+2. [Training](./training.md)
+3. [Create an ocr engine theoritcal approach](https://towardsdatascience.com/what-is-ocr-7d46dc419eb9)
+
+
+## Tools 
+1.  [QT Box-editor](https://zdenop.github.io/qt-box-editor/) for training generating box files
 
 ## Products we will work on:
 

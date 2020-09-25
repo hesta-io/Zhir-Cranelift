@@ -36,9 +36,7 @@ namespace ImageProcessing
         }
         private void CorrectGamma()
         {
-            // create filter
             GammaCorrection filter = new GammaCorrection(0.5);
-            // apply the filter
             filter.ApplyInPlace(InputImage);
         }
         private void CorrectContrastAndBrightness()
