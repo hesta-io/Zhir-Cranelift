@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "CLI": {
-      "commandName": "Project",
-      "commandLineArgs": "--verbose"
-    }
-  }
-}
