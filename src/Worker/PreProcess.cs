@@ -1,14 +1,14 @@
 ﻿
 using AForge.Imaging;
 using AForge.Imaging.Filters;
+
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 
 namespace Worker
 {
-    public class PreProcess
+    public class PreProcess : IDisposable
     {
         private UnmanagedImage InputImage { get; set; }
 
@@ -16,6 +16,7 @@ namespace Worker
         {
             InputImage = UnmanagedImage.FromManagedImage(AForge.Imaging.Image.FromFile(imgPath));
         }
+
         public void Start()
         {
             try
@@ -106,6 +107,11 @@ namespace Worker
             filter.AutomaticSizeCalculaton = true;
             InputImage = filter.Apply(InputImage);
 
+        }
+
+        public void Dispose()
+        {
+            InputImage?.Dispose();
         }
     }
 }

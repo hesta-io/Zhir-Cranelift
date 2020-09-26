@@ -2,7 +2,7 @@
   "profiles": {
     "CLI": {
       "commandName": "Project",
-      "commandLineArgs": "-i D:/ocr -o D:/ocr"
+      "commandLineArgs": "D:/ocr D:/ocr"
     }
   }
 }
