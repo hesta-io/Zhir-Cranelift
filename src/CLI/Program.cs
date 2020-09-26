@@ -1,6 +1,10 @@
 ﻿using CLI;
+using CommandLine;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using Worker;
 
 namespace ClassLibraryTesting
@@ -9,16 +13,33 @@ namespace ClassLibraryTesting
     {
         static void Main(string[] args)
         {
-            string input = "";
-            string output = "";
-            Dictionary<string,string> parsedArgs =  CLIInterface.ParseArgs(args);
-            parsedArgs.TryGetValue("input", out input);
-            parsedArgs.TryGetValue("output", out output);
-            Console.WriteLine(input +" "+ output);
-            /* PreProcess pr = new PreProcess("../../../doc4.jpg");
-             pr.Start();
-             pr.GetProcessedImage().Save("../../../result-doc4.jpg");
+            Dictionary<string, string> parsedArgs = CLIInterface.ParseArgs(args);
+            Console.WriteLine("Loading image files ✓");
+
+            foreach (string file in Directory
+                .EnumerateFiles(parsedArgs["input"])
+                .Where(file =>
+                    file.ToLower().EndsWith("jpg") ||
+                    file.ToLower().EndsWith("png"))
+                .ToList())
+            {
+                Console.WriteLine("Processing " + Path.GetFileName(file) + " ...");
+
+                PreProcess pr = new PreProcess(file);
+                pr.Start();
+                pr.GetProcessedImage().Save(file);
+                string result = OCR.Run(file);
+                File.WriteAllText(Path.GetDirectoryName(file) + "/" + Path.GetFileNameWithoutExtension(file) + ".txt", result);
+            }
+            Console.WriteLine("Processing image files finished ✓");
+            /* ;
+             
+             
              */
         }
+
+
+
     }
+
 }

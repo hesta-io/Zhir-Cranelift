@@ -11,23 +11,24 @@ namespace Worker
     public class PreProcess
     {
         private UnmanagedImage InputImage { get; set; }
-        public PreProcess(Bitmap srcImg)
-        {
-            InputImage = UnmanagedImage.FromManagedImage(srcImg);
-        }
+
         public PreProcess(string imgPath)
         {
-            InputImage = UnmanagedImage.FromManagedImage( new Bitmap(imgPath) );
+            InputImage = UnmanagedImage.FromManagedImage(AForge.Imaging.Image.FromFile(imgPath));
         }
         public void Start()
         {
-            Convert2Grayscale();
-            CropDocument();
+            try
+            {
+                Convert2Grayscale();
+            }
+            catch (Exception e) { }
+            //CropDocument();
             CorrectContrastAndBrightness();
             RemoveNoise();
-            FixOrientation();
+            //FixOrientation();
             //Sharpen();
-            
+
         }
         private void Convert2Grayscale()
         {
@@ -67,8 +68,8 @@ namespace Worker
             // create rotation filter
             RotateBilinear rotationFilter = new RotateBilinear(-angle);
             rotationFilter.FillColor = Color.White;
-            
-           this.InputImage = rotationFilter.Apply(InputImage);
+
+            this.InputImage = rotationFilter.Apply(InputImage);
         }
         private void EqualizeHistogram()
         {
@@ -95,8 +96,8 @@ namespace Worker
             Dilatation DilatationFilter = new Dilatation();
             DilatationFilter.ApplyInPlace(diffImage);
             Sharpen();
-           
-           QuadrilateralFinder qf = new QuadrilateralFinder();
+
+            QuadrilateralFinder qf = new QuadrilateralFinder();
             List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
 
             SimpleQuadrilateralTransformation filter =
@@ -104,7 +105,7 @@ namespace Worker
             filter.UseInterpolation = true;
             filter.AutomaticSizeCalculaton = true;
             InputImage = filter.Apply(InputImage);
-           
+
         }
     }
 }
