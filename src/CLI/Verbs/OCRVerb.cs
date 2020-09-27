@@ -95,9 +95,8 @@ namespace CLI.Verbs
             {
                 var arguments = new[] { imageFile, tempOutputFile, "-l", string.Join("+", languages) };
 
-                var command = Command.Run("tesseract.exe", arguments, options =>
+                var command = Command.Run(Path.Combine(tesseractPath, "tesseract.exe"), arguments, options =>
                 {
-                    options.WorkingDirectory(tesseractPath);
                     options.EnvironmentVariables(new Dictionary<string, string>
                     {
                         { "TESSDATA_PREFIX", Path.Combine(tesseractPath, "tessdata") }

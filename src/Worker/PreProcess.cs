@@ -24,11 +24,10 @@ namespace Worker
                 Convert2Grayscale();
             }
             catch (Exception e) { }
-            //CropDocument();
+            CropDocument();
             CorrectContrastAndBrightness();
             RemoveNoise();
-            //FixOrientation();
-            //Sharpen();
+            FixOrientation();
 
         }
         private void Convert2Grayscale()
@@ -91,12 +90,16 @@ namespace Worker
         public void CropDocument()
         {
 
-            CannyEdgeDetector df = new CannyEdgeDetector();
+            IterativeThreshold df = new IterativeThreshold(2, 100);
+            SobelEdgeDetector edgeDetector = new SobelEdgeDetector();
 
             UnmanagedImage diffImage = df.Apply(InputImage);
-            Dilatation DilatationFilter = new Dilatation();
-            DilatationFilter.ApplyInPlace(diffImage);
-            Sharpen();
+            edgeDetector.ApplyInPlace(diffImage);
+
+
+            //Dilatation DilatationFilter = new Dilatation();
+            //DilatationFilter.ApplyInPlace(diffImage);
+            //diffImage.ToManagedImage().Save("D:/ocr/corpeddiff.png");
 
             QuadrilateralFinder qf = new QuadrilateralFinder();
             List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
@@ -105,8 +108,8 @@ namespace Worker
                 new SimpleQuadrilateralTransformation(corners);
             filter.UseInterpolation = true;
             filter.AutomaticSizeCalculaton = true;
-            InputImage = filter.Apply(InputImage);
-
+            //InputImage = filter.Apply(InputImage);
+            df.ApplyInPlace(InputImage);
         }
 
         public void Dispose()
