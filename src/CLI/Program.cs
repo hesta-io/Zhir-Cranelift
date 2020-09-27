@@ -1,6 +1,7 @@
 ﻿using CLI.Verbs;
 
 using CommandLine;
+using Worker;
 
 namespace CLI
 {

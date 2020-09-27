@@ -24,21 +24,14 @@ namespace Worker
                 Convert2Grayscale();
             }
             catch (Exception e) { }
-            CropDocument();
-            CorrectContrastAndBrightness();
+            Binarize();
             RemoveNoise();
             FixOrientation();
-
         }
         private void Convert2Grayscale()
         {
             Grayscale filter = new Grayscale(0.2125, 0.7154, 0.0721);
             InputImage = filter.Apply(InputImage);
-        }
-        private void CorrectGamma()
-        {
-            GammaCorrection filter = new GammaCorrection(0.5);
-            filter.ApplyInPlace(InputImage);
         }
         private void CorrectContrastAndBrightness()
         {
@@ -50,9 +43,6 @@ namespace Worker
         private void RemoveNoise()
         {
 
-            //ConservativeSmoothing csf = new ConservativeSmoothing();
-            //csf.ApplyInPlace(InputImage);
-            // create filter
             BilateralSmoothing filter = new BilateralSmoothing();
             filter.KernelSize = 7;
             filter.SpatialFactor = 10;
@@ -71,11 +61,6 @@ namespace Worker
 
             this.InputImage = rotationFilter.Apply(InputImage);
         }
-        private void EqualizeHistogram()
-        {
-            HistogramEqualization filter = new HistogramEqualization();
-            filter.ApplyInPlace(InputImage);
-        }
         private void Sharpen()
         {
             // create filter
@@ -87,29 +72,21 @@ namespace Worker
         {
             return InputImage.ToManagedImage();
         }
-        public void CropDocument()
+        public void Binarize()
         {
 
-            IterativeThreshold df = new IterativeThreshold(2, 100);
-            SobelEdgeDetector edgeDetector = new SobelEdgeDetector();
+            BradleyLocalThresholding bradly = new BradleyLocalThresholding();
 
-            UnmanagedImage diffImage = df.Apply(InputImage);
-            edgeDetector.ApplyInPlace(diffImage);
+            //UnmanagedImage diffImage = bradly.Apply(InputImage);
+            //QuadrilateralFinder qf = new QuadrilateralFinder();
+            //List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
 
-
-            //Dilatation DilatationFilter = new Dilatation();
-            //DilatationFilter.ApplyInPlace(diffImage);
-            //diffImage.ToManagedImage().Save("D:/ocr/corpeddiff.png");
-
-            QuadrilateralFinder qf = new QuadrilateralFinder();
-            List<AForge.IntPoint> corners = qf.ProcessImage(diffImage);
-
-            SimpleQuadrilateralTransformation filter =
-                new SimpleQuadrilateralTransformation(corners);
-            filter.UseInterpolation = true;
-            filter.AutomaticSizeCalculaton = true;
+            //SimpleQuadrilateralTransformation filter =
+            //    new SimpleQuadrilateralTransformation(corners);
+            //filter.UseInterpolation = true;
+            //filter.AutomaticSizeCalculaton = true;
             //InputImage = filter.Apply(InputImage);
-            df.ApplyInPlace(InputImage);
+            bradly.ApplyInPlace(InputImage);
         }
 
         public void Dispose()
