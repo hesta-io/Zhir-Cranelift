@@ -3,11 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <CopyRefAssembliesToPublishDirectory>false</CopyRefAssembliesToPublishDirectory>
+    <UserSecretsId>b2f344bb-c744-436d-abf4-deeb666f6b83</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MedallionShell" Version="1.6.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.7" />
+    <PackageReference Include="Tesseract" Version="4.1.0-beta1" />
   </ItemGroup>
 
   <ItemGroup>

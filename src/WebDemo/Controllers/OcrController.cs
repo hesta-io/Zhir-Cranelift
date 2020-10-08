@@ -11,6 +11,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Tesseract;
+
 using Worker;
 
 namespace WebDemo.Controllers
@@ -24,7 +26,7 @@ namespace WebDemo.Controllers
         public async Task<IActionResult> Post(
             [FromForm] IEnumerable<IFormFile> imageFiles)
         {
-            var filePath = Path.GetTempFileName();
+            var filePath = Path.GetTempFileName() + ".jpg";
 
             try
             {
@@ -38,25 +40,33 @@ namespace WebDemo.Controllers
                     await first.CopyToAsync(fileStream);
                 }
 
-                //using var process = new PreProcess(filePath);
+                var pix = Pix.LoadFromFile(filePath);
+                pix.Colormap = null;
 
-                //process.Start();
+                if (pix.Depth > 8)
+                {
+                    pix = pix.ConvertRGBToGray();
+                }
 
-                //var bitmap = process.GetProcessedImage();
+                if (pix.Depth > 2)
+                {
+                    pix = pix.BinarizeSauvola(16, 0.25f, true);
+                }
 
-                //using var stream = new MemoryStream();
-                //bitmap.Save(stream, ImageFormat.Jpeg);
-                //var preprocessed = stream.ToArray();
-                //bitmap.Save(filePath);
+                pix = pix.Deskew();
 
-                var result = await RunTesseract(filePath);
+                pix.Save(filePath);
+
+                //var preprocessed = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                var result = RunTesseract(pix);
 
                 if (result.Success)
                 {
                     return Ok(new
                     {
                         output = result.OutputOrError.Trim(),
-                       // preprocessed = ToBase64(preprocessed),
+                        //preprocessed = ToBase64(preprocessed),
                     });
                 }
 
@@ -78,7 +88,7 @@ namespace WebDemo.Controllers
 
         private string ToBase64(byte[] preprocessed)
         {
-            return $"data:image/jppg;base64, {Convert.ToBase64String(preprocessed)}";
+            return $"data:image/jpg;base64, {Convert.ToBase64String(preprocessed)}";
         }
 
         private class TesseractResult
@@ -87,51 +97,28 @@ namespace WebDemo.Controllers
             public string OutputOrError { get; set; }
         }
 
-        private static async Task<TesseractResult> RunTesseract(string imageFile)
+        private TesseractResult RunTesseract(Pix image)
         {
             var modelsPath = Path.GetFullPath("models");
 
-            var tempOutputFile = Path.GetTempFileName();
-
-            var languages = new[] { "ckb", "ara" };
-
             try
             {
-                var arguments = new[] { imageFile, tempOutputFile, "-l", string.Join("+", languages) };
+                using var engine = new TesseractEngine(modelsPath, "ckb");
+                var result = engine.Process(image);
 
-                var command = Command.Run("tesseract", arguments, options =>
+                return new TesseractResult
                 {
-                    options.EnvironmentVariables(new Dictionary<string, string>
-                    {
-                        { "TESSDATA_PREFIX", modelsPath }
-                    });
-                });
-
-                await command.Task; // Wait for the process to exit
-
-                tempOutputFile += ".txt"; // tesseract adds .txt at the end of the filename!
-                if (command.Result.Success)
-                {
-                    var output = System.IO.File.ReadAllText(tempOutputFile);
-                    return new TesseractResult
-                    {
-                        OutputOrError = output,
-                        Success = true
-                    };
-                }
-                else
-                {
-                    var lines = command.GetOutputAndErrorLines();
-                    return new TesseractResult
-                    {
-                        OutputOrError = string.Join(Environment.NewLine, lines),
-                        Success = false
-                    };
-                }
+                    Success = true,
+                    OutputOrError = result.GetText(),
+                };
             }
-            finally
+            catch (Exception ex)
             {
-                System.IO.File.Delete(tempOutputFile);
+                return new TesseractResult
+                {
+                    Success = false,
+                    OutputOrError = ex.Message
+                };
             }
         }
     }
