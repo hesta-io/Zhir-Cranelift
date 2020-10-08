@@ -49,6 +49,15 @@ namespace WebDemo.Controllers
                 var pix = Pix.LoadFromFile(filePath);
                 pix.Colormap = null;
 
+                var maxSide = 1000f;
+
+                if (pix.Width > maxSide || pix.Height > maxSide)
+                {
+                    var wider = Math.Max(pix.Width, pix.Height);
+                    var scale = 1f / (wider / maxSide);
+                    pix = pix.Scale(scale, scale);
+                }
+
                 if (pix.Depth > 8)
                 {
                     pix = pix.ConvertRGBToGray();
