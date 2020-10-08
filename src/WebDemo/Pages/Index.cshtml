@@ -4,6 +4,11 @@
     ViewData["Title"] = "Home page";
 }
 
+<div id="error-div" class="alert alert-danger" role="alert" hidden>
+    <span id="error-text"></span>
+    <button class="btn btn-primary" style="margin: auto" onclick="again()">👈 Back</button>
+</div>
+
 <form asp-controller="Ocr" asp-action="Post"
       enctype="multipart/form-data" onsubmit="AJAXSubmit(this);return false;"
       method="post">
@@ -61,9 +66,12 @@
         const formData = new FormData(oFormElement);
 
         try {
-            oFormElement.setAttribute("hidden", "true");
-
+            let errorAlert = document.getElementById("error-div");
             let progress = document.getElementById("progress");
+
+            oFormElement.setAttribute("hidden", "true");
+            errorAlert.setAttribute("hidden", "true");
+
             progress.removeAttribute("hidden");
 
             const response = await fetch(oFormElement.action, {
@@ -72,15 +80,19 @@
             });
 
             let body = await response.json();
-
-            let output = document.getElementById("output-text");
-            output.textContent = body.output;
-
             progress.setAttribute("hidden", "true");
 
-            let result = document.getElementById("result");
-            result.removeAttribute("hidden");
+            if (response.ok) {
+                let output = document.getElementById("output-text");
+                output.textContent = body.output;
 
+                let result = document.getElementById("result");
+                result.removeAttribute("hidden");
+            } else {
+                let errorText = document.getElementById("error-text");
+                errorAlert.removeAttribute("hidden");
+                errorText.textContent = body.error;
+            }
         } catch (error) {
             console.error('Error:', error);
         }

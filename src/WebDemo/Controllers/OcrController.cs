@@ -17,6 +17,7 @@ namespace WebDemo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [IgnoreAntiforgeryToken]
     public class OcrController : ControllerBase
     {
         [HttpPost]
