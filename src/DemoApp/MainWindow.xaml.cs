@@ -38,7 +38,7 @@ namespace DemoApp
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            modelsList.ItemsSource = _models = Directory.EnumerateFiles("tesseract\\tessdata", "*.traineddata")
+            modelsList.ItemsSource = _models = Directory.EnumerateFiles("tesseract\\tessdata", "ckb*.traineddata")
                               .Select(f => Path.GetFileNameWithoutExtension(f))
                               .Select(f => new Model
                               {
@@ -218,7 +218,7 @@ namespace DemoApp
 
                 StartProgress();
 
-                var tasks = Directory.EnumerateFiles(folder, "*.jpg")
+                var tasks = Directory.EnumerateFiles(folder, "*.*")
                     .Select(f => Task.Run(() => RunOCR(f)))
                     .ToArray();
 

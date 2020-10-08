@@ -47,7 +47,8 @@
             <Button x:Name="cancelButton" Padding="10, 0" Content="Cancel" Grid.Column="2" Click="cancelButton_Click" />
         </Grid>
 
-        <TextBox x:Name="logTextBox" VerticalScrollBarVisibility="Auto"
+        <TextBox x:Name="logTextBox" VerticalScrollBarVisibility="Auto" FlowDirection="RightToLeft" FontSize="14"
+                 FontFamily="Times New Roman"
                  Background="WhiteSmoke" IsReadOnly="True" Grid.Row="4" AcceptsReturn="True" />
     </Grid>
 </Window>
