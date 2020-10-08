@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Collections;
@@ -13,8 +14,6 @@ using System.Threading.Tasks;
 
 using Tesseract;
 
-using Worker;
-
 namespace WebDemo.Controllers
 {
     [Route("api/[controller]")]
@@ -22,6 +21,13 @@ namespace WebDemo.Controllers
     [IgnoreAntiforgeryToken]
     public class OcrController : ControllerBase
     {
+        private readonly ILogger<OcrController> _logger;
+
+        public OcrController(ILogger<OcrController> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post(
             [FromForm] IEnumerable<IFormFile> imageFiles)
@@ -77,6 +83,7 @@ namespace WebDemo.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Could not scan image.");
                 return BadRequest(new { error = ex.Message });
             }
             finally
@@ -101,25 +108,25 @@ namespace WebDemo.Controllers
         {
             var modelsPath = Path.GetFullPath("models");
 
-            try
-            {
-                using var engine = new TesseractEngine(modelsPath, "ckb");
-                var result = engine.Process(image);
+            //try
+            //{
+            using var engine = new TesseractEngine(modelsPath, "ckb");
+            var result = engine.Process(image);
 
-                return new TesseractResult
-                {
-                    Success = true,
-                    OutputOrError = result.GetText(),
-                };
-            }
-            catch (Exception ex)
+            return new TesseractResult
             {
-                return new TesseractResult
-                {
-                    Success = false,
-                    OutputOrError = ex.Message
-                };
-            }
+                Success = true,
+                OutputOrError = result.GetText(),
+            };
+            //}
+            //catch (Exception ex)
+            //{
+            //    return new TesseractResult
+            //    {
+            //        Success = false,
+            //        OutputOrError = ex.Message
+            //    };
+            //}
         }
     }
 }
