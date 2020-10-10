@@ -20,6 +20,13 @@
     <None Update="models\ckb.traineddata">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="models\eng.traineddata">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\samples\" />
   </ItemGroup>
 
 </Project>

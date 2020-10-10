@@ -38,7 +38,7 @@ namespace DemoApp
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            modelsList.ItemsSource = _models = Directory.EnumerateFiles("tesseract\\tessdata", "ckb*.traineddata")
+            modelsList.ItemsSource = _models = Directory.EnumerateFiles("tesseract\\tessdata", "*.traineddata")
                               .Select(f => Path.GetFileNameWithoutExtension(f))
                               .Select(f => new Model
                               {

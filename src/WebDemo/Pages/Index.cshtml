@@ -9,21 +9,69 @@
     <button class="btn btn-primary" style="margin: auto" onclick="again()">👈 Back</button>
 </div>
 
-<form asp-controller="Ocr" asp-action="Post"
-      enctype="multipart/form-data" onsubmit="AJAXSubmit(this);return false;"
-      method="post">
+<div class="alert alert-info" role="alert">
+    <b>Note:</b> ZhirAI is in early beta phase. The final product will be more accurate, reliable, and user friendly!
+</div>
 
-    <div class="alert alert-info" role="alert">
-        <b>Note:</b> ZhirAI is in early beta phase. The final product will be more accurate, reliable, and user friendly!
+<div id="try">
+
+    <div class="card mb-4 box-shadow">
+        <div class="card-body">
+            <h5 class="card-title">Try it out by uploading an image:</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Please select an image to be scanned (Or drag and drop the image below):</h6>
+            <form asp-controller="Ocr" asp-action="PostForm"
+                  enctype="multipart/form-data" onsubmit="submitForm(this);return false;"
+                  method="post">
+
+                <div class="form-group">
+                    <label for="imageFiles"></label>
+                    <div class="form-inline">
+                        <input name="imageFiles" class="form-control col-8" type="file" style="padding:10px;height:50px" />
+                        <input class="btn btn-primary btn-lg col-3 offset-1" type="submit" value="Scan 🔎" />
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label for="imageFiles">Please select an image to be scanned (Or drag and drop the image below):</label>
-        <input name="imageFiles" class="form-control" type="file" style="padding:10px;height:50px" />
+    @{
+        const int totalWidth = 12;
+        const int width = 4;
+        const int columns = totalWidth / width;
+    }
+
+    <div class="card box-shadow mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Or try one of our examples:</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Click on of the examples to scan it.</h6>
+            <div>
+                @for (int i = 0; i < Model.Samples.Length; i++)
+                {
+                    if (i % columns == 0)
+                    {
+                        @Html.Raw("<div class=\"row mb-2\">")
+                    }
+
+                    <div class="col-lg-4">
+                        <div class="card m-2">
+                            <img class="card-img-top" src="@Model.Samples[i]" style="height:250px">
+                            <div class="card-body">
+                                <a href="#" class="btn btn-primary col-6" onclick="submitUrl('@Model.Samples[i]');">Try</a>
+                                <a href="@Model.Samples[i]" target="_blank" class="card-link col-4 offset-2">Zoom</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    if ((i + 1) % columns == 0)
+                    {
+                        @Html.Raw("</div>")
+                    }
+                }
+            </div>
+        </div>
     </div>
 
-    <input class="btn btn-primary btn-lg col-4 offset-4" type="submit" value="Scan 🔎" />
-</form>
+</div>
 
 <div id="progress" hidden>
     <div class="sk-circle">
@@ -51,10 +99,9 @@
 
     <div id="output-text" dir="rtl"
          style="white-space: pre-wrap; overflow-y: auto; text-align: right; background-color: whitesmoke; padding: 20px; "></div>
-
-    <div style="height:10px; clear:both"></div>
-
 </div>
+
+<div style="height:10px; clear:both"></div>
 
 <script>
 
@@ -62,22 +109,45 @@
         location.reload();
     }
 
-    async function AJAXSubmit(oFormElement) {
+    async function submitForm(oFormElement) {
         const formData = new FormData(oFormElement);
 
+        let promise = fetch(oFormElement.action, {
+            method: 'POST',
+            body: formData,
+        });
+
+        await submit(promise);
+    }
+
+    async function submitUrl(url) {
+        let body = {
+            url : url
+        };
+
+        let promise = fetch('@Url.Action("PostUrl", "Ocr")', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        await submit(promise);
+    }
+
+    async function submit(promise) {
         try {
             let errorAlert = document.getElementById("error-div");
             let progress = document.getElementById("progress");
+            let tryDiv = document.getElementById("try");
 
-            oFormElement.setAttribute("hidden", "true");
+            tryDiv.setAttribute("hidden", "true");
             errorAlert.setAttribute("hidden", "true");
 
             progress.removeAttribute("hidden");
 
-            const response = await fetch(oFormElement.action, {
-                method: 'POST',
-                body: formData
-            });
+            const response = await promise;
 
             let body = await response.json();
             progress.setAttribute("hidden", "true");
