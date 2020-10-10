@@ -97,8 +97,11 @@
 
     <div style="height:10px; clear:both"></div>
 
-    <div id="output-text" dir="rtl"
-         style="white-space: pre-wrap; overflow-y: auto; text-align: right; background-color: whitesmoke; padding: 20px; "></div>
+    <div class="row">
+        <img id="preprocessed-img" class="col-lg-6 img-fluid" />
+        <div id="output-text" class="col-lg-6" dir="rtl"
+             style="white-space: pre-wrap; overflow-y: auto; text-align: right; background-color: whitesmoke; padding: 20px; "></div>
+    </div>
 </div>
 
 <div style="height:10px; clear:both"></div>
@@ -155,6 +158,9 @@
             if (response.ok) {
                 let output = document.getElementById("output-text");
                 output.textContent = body.output;
+
+                let preprocessedImg = document.getElementById("preprocessed-img");
+                preprocessedImg.setAttribute("src", body.preprocessed);
 
                 let result = document.getElementById("result");
                 result.removeAttribute("hidden");

@@ -1,4 +1,6 @@
 ﻿
+using Medallion.Shell;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -56,7 +58,7 @@ namespace WebDemo.Controllers
                 await first.CopyToAsync(fileStream);
             }
 
-            return ProcessImage(filePath);
+            return await ProcessImage(filePath);
         }
 
         [HttpPost("url")]
@@ -73,10 +75,10 @@ namespace WebDemo.Controllers
 
             await System.IO.File.WriteAllBytesAsync(filePath, bytes);
 
-            return ProcessImage(filePath);
+            return await ProcessImage(filePath);
         }
 
-        private IActionResult ProcessImage(string filePath)
+        private async Task<IActionResult> ProcessImage(string filePath)
         {
             try
             {
@@ -105,17 +107,18 @@ namespace WebDemo.Controllers
                 pix = pix.Deskew();
 
                 pix.Save(filePath);
+                pix.Dispose();
 
-                //var preprocessed = await System.IO.File.ReadAllBytesAsync(filePath);
+                var preprocessed = await System.IO.File.ReadAllBytesAsync(filePath);
 
-                var result = RunTesseract(pix);
+                var result = await RunTesseract(filePath);
 
                 if (result.Success)
                 {
                     return Ok(new
                     {
                         output = result.OutputOrError.Trim(),
-                        //preprocessed = ToBase64(preprocessed),
+                        preprocessed = ToBase64(preprocessed),
                     });
                 }
 
@@ -150,30 +153,52 @@ namespace WebDemo.Controllers
             public string OutputOrError { get; set; }
         }
 
-        private TesseractResult RunTesseract(Pix image)
+        private static async Task<TesseractResult> RunTesseract(string imageFile)
         {
             var modelsPath = Path.GetFullPath("models");
 
-            //try
-            //{
-            // BUG: For some reason, eng model is not used!
-            using var engine = new TesseractEngine(modelsPath, "ckb+eng");
-            var result = engine.Process(image);
+            var tempOutputFile = Path.GetTempFileName();
 
-            return new TesseractResult
+            var languages = new[] { "ckb", "eng" };
+
+            try
             {
-                Success = true,
-                OutputOrError = result.GetText(),
-            };
-            //}
-            //catch (Exception ex)
-            //{
-            //    return new TesseractResult
-            //    {
-            //        Success = false,
-            //        OutputOrError = ex.Message
-            //    };
-            //}
+                var arguments = new[] { imageFile, tempOutputFile, "-l", string.Join("+", languages) };
+
+                var command = Command.Run("tesseract", arguments, options =>
+                {
+                    options.EnvironmentVariables(new Dictionary<string, string>
+                    {
+                        { "TESSDATA_PREFIX", modelsPath }
+                    });
+                });
+
+                await command.Task; // Wait for the process to exit
+
+                tempOutputFile += ".txt"; // tesseract adds .txt at the end of the filename!
+                if (command.Result.Success)
+                {
+                    var output = System.IO.File.ReadAllText(tempOutputFile);
+                    return new TesseractResult
+                    {
+                        OutputOrError = output,
+                        Success = true
+                    };
+                }
+                else
+                {
+                    var lines = command.GetOutputAndErrorLines();
+                    return new TesseractResult
+                    {
+                        OutputOrError = string.Join(Environment.NewLine, lines),
+                        Success = false
+                    };
+                }
+            }
+            finally
+            {
+                System.IO.File.Delete(tempOutputFile);
+            }
         }
     }
 }
