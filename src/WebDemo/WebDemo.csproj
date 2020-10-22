@@ -12,26 +12,8 @@
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
     <PackageReference Include="Tesseract" Version="4.1.0-beta1" />
   </ItemGroup>
- 
+
   <ItemGroup>
-    <None Update="dependencies\ocr-preprocess\functions.py">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dependencies\ocr-preprocess\LICENSE">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dependencies\ocr-preprocess\Pipfile">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dependencies\ocr-preprocess\pre-process.py">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dependencies\ocr-preprocess\README.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dependencies\ocr-preprocess\result.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="models\ara.traineddata">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -44,22 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\dependencies\**\*">
-      <Link>dependencies\%(RecursiveDir)/%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\..\dependencies\ocr-preprocess\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
     <Folder Include="wwwroot\samples\" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="..\..\README.md" Link="README.md" />
   </ItemGroup>
 
 </Project>

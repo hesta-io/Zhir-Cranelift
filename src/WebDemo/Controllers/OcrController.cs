@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -83,33 +82,32 @@ namespace WebDemo.Controllers
         {
             try
             {
-                await Preprocess(filePath, filePath);
-                //var pix = Pix.LoadFromFile(filePath);
-                //pix.Colormap = null;
+                var pix = Pix.LoadFromFile(filePath);
+                pix.Colormap = null;
 
-                //var maxSide = 1000f;
+                var maxSide = 1000f;
 
-                //if (pix.Width > maxSide || pix.Height > maxSide)
-                //{
-                //    var wider = Math.Max(pix.Width, pix.Height);
-                //    var scale = 1f / (wider / maxSide);
-                //    pix = pix.Scale(scale, scale);
-                //}
+                if (pix.Width > maxSide || pix.Height > maxSide)
+                {
+                    var wider = Math.Max(pix.Width, pix.Height);
+                    var scale = 1f / (wider / maxSide);
+                    pix = pix.Scale(scale, scale);
+                }
 
-                //if (pix.Depth > 8)
-                //{
-                //    pix = pix.ConvertRGBToGray();
-                //}
+                if (pix.Depth > 8)
+                {
+                    pix = pix.ConvertRGBToGray();
+                }
 
-                //if (pix.Depth > 2)
-                //{
-                //    pix = pix.BinarizeSauvola(16, 0.25f, true);
-                //}
+                if (pix.Depth > 2)
+                {
+                    pix = pix.BinarizeSauvola(16, 0.25f, true);
+                }
 
-                //pix = pix.Deskew();
+                pix = pix.Deskew();
 
-                //pix.Save(filePath);
-                //pix.Dispose();
+                pix.Save(filePath);
+                pix.Dispose();
 
                 var preprocessed = await System.IO.File.ReadAllBytesAsync(filePath);
 
@@ -142,23 +140,6 @@ namespace WebDemo.Controllers
                 if (System.IO.File.Exists(filePath))
                     System.IO.File.Delete(filePath);
             }
-        }
-
-        private async Task Preprocess(string input, string output)
-        {
-            var folder = Path.GetFullPath("dependencies/ocr-preprocess");
-
-            //await Command.Run("pipenv", new[] { "install" }, options =>
-            //{
-            //    options.WorkingDirectory(folder);
-            //}).Task;
-
-            var command = Command.Run("pipenv", new[] { "run", "python", "./pre-process.py", "-i", input, "-o", output }, options =>
-            {
-                options.WorkingDirectory(folder);
-            });
-
-            await command.Task;
         }
 
         private string ToBase64(byte[] preprocessed)

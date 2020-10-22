@@ -10,8 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using WebDemo.Services;
-
 namespace WebDemo
 {
     public class Startup
@@ -28,7 +26,6 @@ namespace WebDemo
         {
             services.AddRazorPages();
             services.AddHttpClient();
-            services.AddHostedService<InitializeDependenciesService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
