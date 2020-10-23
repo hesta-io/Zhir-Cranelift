@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -82,17 +83,18 @@ namespace WebDemo.Controllers
         {
             try
             {
+                var timer = Stopwatch.StartNew();
                 var pix = Pix.LoadFromFile(filePath);
                 pix.Colormap = null;
 
-                var maxSide = 1000f;
+                //var maxSide = 1000f;
 
-                if (pix.Width > maxSide || pix.Height > maxSide)
-                {
-                    var wider = Math.Max(pix.Width, pix.Height);
-                    var scale = 1f / (wider / maxSide);
-                    pix = pix.Scale(scale, scale);
-                }
+                //if (pix.Width > maxSide || pix.Height > maxSide)
+                //{
+                //    var wider = Math.Max(pix.Width, pix.Height);
+                //    var scale = 1f / (wider / maxSide);
+                //    pix = pix.Scale(scale, scale);
+                //}
 
                 if (pix.Depth > 8)
                 {
@@ -112,6 +114,7 @@ namespace WebDemo.Controllers
                 var preprocessed = await System.IO.File.ReadAllBytesAsync(filePath);
 
                 var result = await RunTesseract(filePath);
+                timer.Stop();
 
                 if (result.Success)
                 {
@@ -119,6 +122,7 @@ namespace WebDemo.Controllers
                     {
                         output = result.OutputOrError.Trim(),
                         preprocessed = ToBase64(preprocessed),
+                        time = timer.ElapsedMilliseconds
                     });
                 }
 

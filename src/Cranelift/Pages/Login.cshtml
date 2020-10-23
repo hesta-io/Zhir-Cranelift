@@ -1,0 +1,29 @@
+﻿@page
+@model Cranelift.Pages.LoginModel
+@{
+}
+
+@if (string.IsNullOrEmpty(Model.Message) == false)
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.Message
+    </div>
+}
+
+<form asp-page=".">
+    <div class="form-group">
+        <label asp-for="Username">User Name</label>
+        <input asp-for="Username" type="text" class="form-control" placeholder="User Name" spellcheck="false" data-ms-editor="true">
+    </div>
+    <div class="form-group">
+        <label asp-for="Password">Password</label>
+        <input type="password" class="form-control" placeholder="Password" asp-for="Password">
+    </div>
+
+    <div class="form-check form-group">
+        <input class="form-check-input" asp-for="RememberMe">
+        <label class="form-check-label" asp-for="RememberMe">Remember Me</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
