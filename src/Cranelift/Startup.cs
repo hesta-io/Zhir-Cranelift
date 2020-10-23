@@ -57,6 +57,7 @@ namespace Cranelift
             services.AddHostedService<JobListener>();
 
             services.AddRazorPages();
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
