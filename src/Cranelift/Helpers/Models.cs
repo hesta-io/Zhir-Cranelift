@@ -20,11 +20,10 @@ namespace Cranelift.Helpers
         public int UserId { get; set; }
         public int PageCount { get; set; }
         public string Status { get; set; }
-        public int PricePerPage { get; set; } // This should be decimal?
-        public DateTime ChangedToQueue { get; set; } // QueuedAt ?
-        public DateTime ChangedToProcessing { get; set; } // ProcessedAt ?
-        public DateTime ChangedToCompleted { get; set; } // CompletedAt ?
-        public DateTime ChangedToFailed { get; set; } // Maybe we only need changed to completed?
+        public decimal? PricePerPage { get; set; }
+        public DateTime QueudAt { get; set; }
+        public DateTime ProcessedAt { get; set; }
+        public DateTime FinishedAt { get; set; }
         public string FailingReason { get; set; }
         public bool? Deleted { get; set; }
         public DateTime CreatedAt { get; set; }

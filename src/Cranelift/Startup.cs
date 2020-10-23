@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Cranelift.Helpers;
 using Cranelift.Services;
+using Hangfire.Console;
 
 namespace Cranelift
 {
@@ -37,7 +38,8 @@ namespace Cranelift
                 .UseStorage(new MySqlStorage(Configuration.GetConnectionString("HangfireConnection"), new MySqlStorageOptions
                 {
                     QueuePollInterval = TimeSpan.FromSeconds(1)
-                })));
+                }))
+                .UseConsole());
 
             // Add the processing server as IHostedService
             services.AddHangfireServer(options =>
@@ -56,6 +58,7 @@ namespace Cranelift
 
             services.AddHostedService<JobListener>();
 
+            services.AddScoped<IDbContext, MySqlDbContext>();
             services.AddRazorPages();
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }

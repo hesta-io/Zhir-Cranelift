@@ -1,6 +1,9 @@
 ﻿using Cranelift.Helpers;
+using Cranelift.Steps;
 
 using Dapper;
+
+using Hangfire;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +16,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +27,7 @@ namespace Cranelift.Services
         public double IntervalSeconds { get; set; }
     }
 
-    public class JobListener : IHostedService
+    public class JobListener : BackgroundService
     {
         public JobListener(IServiceProvider serviceProvider)
         {
@@ -32,43 +36,14 @@ namespace Cranelift.Services
 
         public IServiceProvider ServiceProvider { get; }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        private async Task UpdateJobStatusAsync(DbConnection connection, IEnumerable<string> jobIds)
         {
-            while (true)
+            var ids = string.Join(",", jobIds.Select(id => $"'{id}'"));
+            using (var command = connection.CreateCommand())
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                double waitSeconds = 1;
-                using (var scope = ServiceProvider.CreateScope())
-                {
-                    ListenerOptions options = GetOptions(scope.ServiceProvider);
-                    waitSeconds = options.IntervalSeconds;
-
-                    using (var connection = await OpenConnectionAsync(scope.ServiceProvider, "OcrConnection", cancellationToken))
-                    using (var transaction = await connection.BeginTransactionAsync(
-                                    System.Data.IsolationLevel.ReadUncommitted,
-                                    cancellationToken))
-                    {
-                        var pendingJobs = await GetPendingJobsAsync(connection);
-
-                    }
-                }
-
-                await Task.Delay((int)(waitSeconds * 1000));
+                command.CommandText = $"UPDATE job SET status = '{ModelConstants.Queued}' WHERE id in ({ids})";
+                await command.ExecuteNonQueryAsync();
             }
-        }
-
-        private async Task<DbConnection> OpenConnectionAsync(
-            IServiceProvider serviceProvider,
-            string connectionStringName,
-            CancellationToken token)
-        {
-            var configs = serviceProvider.GetService<IConfiguration>();
-            var connectionString = configs.GetConnectionString(connectionStringName);
-
-            var connection = new MySqlConnection(connectionString);
-            await connection.OpenAsync(token);
-            return connection;
         }
 
         private static ListenerOptions GetOptions(IServiceProvider serviceProvider)
@@ -85,9 +60,43 @@ namespace Cranelift.Services
             return await connection.QueryAsync<Job>(sql);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                double waitSeconds = 1;
+                using (var scope = ServiceProvider.CreateScope())
+                {
+                    ListenerOptions options = GetOptions(scope.ServiceProvider);
+                    waitSeconds = options.IntervalSeconds;
+
+                    var scheduler = scope.ServiceProvider.GetService<IBackgroundJobClient>();
+
+                    var context = scope.ServiceProvider.GetService<IDbContext>();
+
+                    using (var connection = await context.OpenConnectionAsync("OcrConnection", cancellationToken))
+                    using (var transaction = await connection.BeginTransactionAsync(
+                                    System.Data.IsolationLevel.ReadUncommitted,
+                                    cancellationToken))
+                    {
+                        var pendingJobs = await GetPendingJobsAsync(connection);
+
+                        if (pendingJobs.Any())
+                        {
+                            foreach (var job in pendingJobs)
+                            {
+                                scheduler.Enqueue<ProcessStep>(s => s.Execute(job.Id, null));
+                            }
+
+                            await UpdateJobStatusAsync(connection, pendingJobs.Select(j => j.Id));
+                        }
+                    }
+                }
+
+                await Task.Delay((int)(waitSeconds * 1000));
+            }
         }
     }
 }
