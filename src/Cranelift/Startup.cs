@@ -14,6 +14,7 @@ using Hangfire.MySql;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Cranelift.Helpers;
+using Cranelift.Services;
 
 namespace Cranelift
 {
@@ -52,6 +53,9 @@ namespace Cranelift
                 });
 
             services.AddScoped<CustomCookieAuthenticationEvents>();
+
+            services.AddHostedService<JobListener>();
+
             services.AddRazorPages();
         }
 
