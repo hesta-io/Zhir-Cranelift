@@ -29,4 +29,20 @@ namespace Cranelift.Helpers
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
     }
+
+    public class Page
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public int UserId { get; set; }
+        public string JobId { get; set; }
+        public DateTime StartedProcessingAt { get; set; }
+        public DateTime FinishedProcessingAt { get; set; }
+        public bool Succeeded { get; set; }
+        public string Result { get; set; }
+        public string FormatedResult { get; set; }
+        public bool Deleted { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public int CreatedBy { get; set; }
+    }
 }

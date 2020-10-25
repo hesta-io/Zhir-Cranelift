@@ -49,15 +49,8 @@ namespace Cranelift.Services
         private static ListenerOptions GetOptions(IServiceProvider serviceProvider)
         {
             var configs = serviceProvider.GetService<IConfiguration>();
-            var options = new ListenerOptions();
-            configs.GetSection("Listener").Bind(options);
+            var options = configs.GetSection(Constants.Listener).Get<ListenerOptions>();
             return options;
-        }
-
-        private static async Task<IEnumerable<Job>> GetPendingJobsAsync(DbConnection connection)
-        {
-            var sql = $"SELECT * FROM job WHERE STATUS = '{ModelConstants.Pending}'";
-            return await connection.QueryAsync<Job>(sql);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -76,12 +69,9 @@ namespace Cranelift.Services
 
                     var context = scope.ServiceProvider.GetService<IDbContext>();
 
-                    using (var connection = await context.OpenConnectionAsync("OcrConnection", cancellationToken))
-                    using (var transaction = await connection.BeginTransactionAsync(
-                                    System.Data.IsolationLevel.ReadUncommitted,
-                                    cancellationToken))
+                    using (var connection = await context.OpenConnectionAsync(Constants.OcrConnectionName, cancellationToken))
                     {
-                        var pendingJobs = await GetPendingJobsAsync(connection);
+                        var pendingJobs = await connection.GetPendingJobsAsync();
 
                         if (pendingJobs.Any())
                         {
