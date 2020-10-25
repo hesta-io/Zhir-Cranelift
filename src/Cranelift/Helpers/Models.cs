@@ -39,10 +39,12 @@ namespace Cranelift.Helpers
         public DateTime StartedProcessingAt { get; set; }
         public DateTime FinishedProcessingAt { get; set; }
         public bool Succeeded { get; set; }
+        public bool Processed { get; set; }
         public string Result { get; set; }
         public string FormatedResult { get; set; }
         public bool Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
+        public string FullPath { get; set; }
     }
 }

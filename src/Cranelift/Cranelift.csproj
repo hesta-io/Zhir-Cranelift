@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Dependencies\" />
+    <Folder Include="Dependencies\models\" />
   </ItemGroup>
 
 </Project>

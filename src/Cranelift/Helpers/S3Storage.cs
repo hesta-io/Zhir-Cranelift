@@ -29,11 +29,30 @@ namespace Cranelift.Helpers
                 return File.OpenWrite(path);
             });
         }
+
+        public static async Task<bool> UploadBlob(this IStorage storage, string key, string filePath, string contentType = null)
+        {
+            if (contentType is null)
+            {
+                if (filePath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/jpeg";
+                }
+                else if (filePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/png";
+                }
+            }
+
+            using var stream = File.OpenRead(filePath);
+            return await storage.UploadBlob(key, stream, contentType);
+        }
     }
 
     public interface IStorage
     {
         Task DownloadBlobs(string prefix, Func<string, Stream> getDestinationStream);
+        Task<bool> UploadBlob(string key, Stream data, string contentType);
     }
 
     public class S3Storage : IStorage
@@ -71,6 +90,20 @@ namespace Cranelift.Helpers
 
                 await blobResponse.ResponseStream.CopyToAsync(destinationStream);
             }
+        }
+
+        public async Task<bool> UploadBlob(string key, Stream data, string contentType)
+        {
+            var request = new PutObjectRequest
+            {
+                ContentType = contentType,
+                InputStream = data,
+                Key = key,
+                BucketName = _options.BucketName,
+            };
+
+            var response = await _client.PutObjectAsync(request);
+            return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
         }
     }
 }

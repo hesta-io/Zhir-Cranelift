@@ -1,22 +1,34 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Linq;
 
 namespace Cranelift
 {
     public static class Extensions
     {
-        // https://gist.github.com/rob-blackbourn/e573ad0de40fa8e8c167
-        public static IEnumerable<IEnumerable<T>> Chunk<T>(this IEnumerable<T> source, int count)
+        // https://www.extensionmethod.net/csharp/ienumerable/ienumerable-chunk
+        public static IEnumerable<IEnumerable<T>> Chunk<T>(this IEnumerable<T> list, int chunkSize)
         {
-            var e = source.GetEnumerator();
+            if (chunkSize <= 0)
+            {
+                throw new ArgumentException("chunkSize must be greater than 0.");
+            }
 
-            while (e.MoveNext())
-                yield return Next(e, count);
+            while (list.Any())
+            {
+                yield return list.Take(chunkSize);
+                list = list.Skip(chunkSize);
+            }
         }
 
-        private static IEnumerable<T> Next<T>(IEnumerator<T> e, int count)
+        // https://stackoverflow.com/a/21609968/7003797
+        public static void AddParameterWithValue(this DbCommand command, string parameterName, object parameterValue)
         {
-            do yield return e.Current;
-            while (--count > 0 && e.MoveNext());
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = parameterName;
+            parameter.Value = parameterValue;
+            command.Parameters.Add(parameter);
         }
     }
 }
