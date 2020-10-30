@@ -60,7 +60,7 @@ namespace Cranelift
             services.AddScoped<CustomCookieAuthenticationEvents>();
 
             services.AddHostedService<JobListener>();
-            services.AddHostedService<InitializeDependencies>();
+            // services.AddHostedService<InitializeDependencies>();
 
             services.AddScoped<IDbContext, MySqlDbContext>();
             services.AddScoped<IStorage, S3Storage>();
