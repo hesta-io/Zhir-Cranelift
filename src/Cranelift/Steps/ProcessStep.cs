@@ -17,6 +17,7 @@ using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
@@ -39,17 +40,20 @@ namespace Cranelift.Steps
         private readonly IDbContext _dbContext;
         private readonly IStorage _storage;
         private readonly IWebHostEnvironment _environment;
+        private readonly PythonHelper _pythonHelper;
         private readonly WorkerOptions _options;
 
         public ProcessStep(
             IDbContext dbContext,
             IStorage storage,
             IConfiguration configuration,
-            IWebHostEnvironment _environment)
+            IWebHostEnvironment _environment,
+            PythonHelper pythonHelper)
         {
             _dbContext = dbContext;
             _storage = storage;
             this._environment = _environment;
+            _pythonHelper = pythonHelper;
             _options = configuration.GetSection(Constants.Worker).Get<WorkerOptions>();
         }
 
@@ -59,7 +63,7 @@ namespace Cranelift.Steps
 
             context.WriteLine($"Processing {jobId}");
 
-            using var connection = await _dbContext.OpenConnectionAsync(Constants.OcrConnectionName);
+            using var connection = await _dbContext.OpenOcrConnectionAsync();
 
             // Step 1: Make sure the job is not processed
             var job = await connection.GetJobAsync(jobId);
@@ -71,7 +75,6 @@ namespace Cranelift.Steps
 
             try
             {
-
                 job.Status = ModelConstants.Processing;
                 job.ProcessedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
@@ -81,6 +84,8 @@ namespace Cranelift.Steps
                 var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
 
                 await _storage.DownloadBlobs(originalPrefix, originalPath);
+
+                // TODO: Make sure user has enough balance!
 
                 var pages = Directory.EnumerateFiles(Path.Combine(originalPath, originalPrefix))
                                       .Where(i => IsImage(i))
@@ -100,7 +105,7 @@ namespace Cranelift.Steps
 
                 var parallelizationDegree = _options.ParallelPagesCount;
 
-                var tasks = pages.Select(p => ProcessPage(job, p, connection)).ToArray();
+                var tasks = pages.Select(p => ProcessPage(job, p)).ToArray();
 
                 var count = 0;
                 var chunks = tasks.Chunk(parallelizationDegree).ToArray();
@@ -128,11 +133,18 @@ namespace Cranelift.Steps
                     }
                 }
 
-                // TODO: Generate Word/PDF file!
-
                 if (job.Status != ModelConstants.Failed)
                 {
                     job.Status = ModelConstants.Completed;
+
+                    // TODO: Generate Word/PDF file!
+                    var text = string.Join("\n\n\n", pages.Select(p => p.Result));
+                    var bytes = Encoding.UTF8.GetBytes(text);
+                    var key = $"{Constants.Done}/{job.UserId}/{job.Id}/result.txt";
+
+                    await _storage.UploadBlob(key, new MemoryStream(bytes), "text/plain");
+
+                    // TODO: Update balance?
                 }
 
                 // Update job :)
@@ -141,13 +153,15 @@ namespace Cranelift.Steps
             }
             catch (Exception ex)
             {
+                // Question: Should we fail the job?
+                // Retry mechanism?
                 job.Status = ModelConstants.Queued;
                 await connection.UpdateJob(job);
                 throw;
             }
         }
 
-        private async Task<Page> ProcessPage(Job job, Page page, DbConnection connection)
+        private async Task<Page> ProcessPage(Job job, Page page)
         {
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
@@ -169,6 +183,7 @@ namespace Cranelift.Steps
             page.FinishedProcessingAt = DateTime.UtcNow;
             page.Succeeded = success;
 
+            using var connection = await _dbContext.OpenOcrConnectionAsync();
             await connection.InsertPage(page);
 
             return page;
@@ -178,19 +193,15 @@ namespace Cranelift.Steps
         {
             var preProcessPath = Path.Combine(_environment.ContentRootPath, "Dependencies/ocr-preprocess");
             var scriptPath = Path.Combine(preProcessPath, "src/pre-process.py");
-            var poetryPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                "poetry.bat" : "poetry";
 
             Directory.CreateDirectory(Path.GetDirectoryName(output));
 
-            var command = Command.Run(poetryPath, new[] { "run", "python", scriptPath, "-i", input, "-o", output }, options =>
+            var result = await _pythonHelper.Run(new[] { scriptPath, "-i", input, "-o", output }, options =>
             {
                 options.WorkingDirectory(preProcessPath);
             });
 
-            await command.Task;
-
-            return command.Result.Success;
+            return result.Success;
         }
 
         private static bool IsImage(string path)

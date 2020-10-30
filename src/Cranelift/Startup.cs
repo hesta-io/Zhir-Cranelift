@@ -64,6 +64,7 @@ namespace Cranelift
 
             services.AddScoped<IDbContext, MySqlDbContext>();
             services.AddScoped<IStorage, S3Storage>();
+            services.AddScoped<PythonHelper>();
 
             services.AddRazorPages();
 

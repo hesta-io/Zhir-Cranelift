@@ -16,6 +16,14 @@ namespace Cranelift.Helpers
         Task<DbConnection> OpenConnectionAsync(string connectionStringName, CancellationToken token = default);
     }
 
+    public static class Extensions
+    {
+        public static Task<DbConnection> OpenOcrConnectionAsync(this IDbContext dbContext, CancellationToken token = default)
+        {
+            return dbContext.OpenConnectionAsync(Constants.OcrConnectionName, token);
+        }
+    }
+
     public static class Queries
     {
         public static async Task<IEnumerable<Job>> GetPendingJobsAsync(this DbConnection connection)
