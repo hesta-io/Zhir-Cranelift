@@ -1,0 +1,22 @@
+{
+  "ConnectionStrings": {
+    "HangfireConnection": "Server=***;Database=***;Uid=***;Pwd=***;Allow User Variables=True;CharSet=utf8;",
+    "OcrConnection": "Server=***;Database=***;Uid=***;Pwd=***;CharSet=utf8;"
+  },
+  "Users": [
+    {
+      "Username": "***",
+      "Password": "***"
+    },
+    {
+      "Username": "***",
+      "Password": "***"
+    }
+  ],
+  "Storage": {
+    "HostName": "***",
+    "AccessKey": "***",
+    "Secret": "***",
+    "BucketName": "***"
+  }
+}
