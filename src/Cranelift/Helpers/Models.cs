@@ -21,13 +21,18 @@ namespace Cranelift.Helpers
         public int PageCount { get; set; }
         public string Status { get; set; }
         public decimal? PricePerPage { get; set; }
-        public DateTime QueudAt { get; set; }
+        public DateTime QueuedAt { get; set; }
         public DateTime ProcessedAt { get; set; }
         public DateTime FinishedAt { get; set; }
         public string FailingReason { get; set; }
         public bool? Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
+
+        public bool HasFinished()
+        {
+            return Status == ModelConstants.Completed || Status == ModelConstants.Failed; 
+        }
     }
 
     public class Page

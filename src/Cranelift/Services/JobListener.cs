@@ -39,11 +39,11 @@ namespace Cranelift.Services
         private async Task UpdateJobStatusAsync(DbConnection connection, IEnumerable<string> jobIds)
         {
             var ids = string.Join(",", jobIds.Select(id => $"'{id}'"));
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = $"UPDATE job SET status = '{ModelConstants.Queued}' WHERE id in ({ids})";
-                await command.ExecuteNonQueryAsync();
-            }
+            using var command = connection.CreateCommand();
+            command.CommandText = $"UPDATE job SET status = '{ModelConstants.Queued}', queued_at = @currentTime WHERE id in ({ids})";
+            command.AddParameterWithValue("currentTime", DateTime.UtcNow);
+
+            await command.ExecuteNonQueryAsync();
         }
 
         private static ListenerOptions GetOptions(IServiceProvider serviceProvider)
@@ -75,9 +75,12 @@ namespace Cranelift.Services
 
                         if (pendingJobs.Any())
                         {
+                            // var api = JobStorage.Current.GetMonitoringApi();
+
                             foreach (var job in pendingJobs)
                             {
-                                scheduler.Enqueue<ProcessStep>(s => s.Execute(job.Id, null));
+                                var jobId = scheduler.Enqueue<ProcessStep>(s => s.Execute(job.Id, null));
+                                // TODO: What if we store the hangfire job id in the databse row?
                             }
 
                             await UpdateJobStatusAsync(connection, pendingJobs.Select(j => j.Id));

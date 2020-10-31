@@ -8,6 +8,7 @@
         public const string Worker = "Worker";
         public const string Storage = "Storage";
         public const string Listener = "Listener";
+        public const string Python = "Python";
 
         public const string Original = "original";
         public const string Done = "done";

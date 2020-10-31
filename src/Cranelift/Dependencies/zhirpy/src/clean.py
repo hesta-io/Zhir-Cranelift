@@ -1,14 +1,14 @@
+# - https://scikit-image.org/docs/dev/
+# - argparse: https://docs.python.org/3/library/argparse.html
+
 from skimage.filters import gaussian, threshold_otsu
 from skimage.feature import canny
 from skimage.transform import probabilistic_hough_line, rotate
-import numpy as np
-import os
 from skimage import io
 from skimage import filters
 from skimage import transform
-from skimage import color
-from skimage import viewer
-from skimage import util
+import argparse
+import numpy as np
 
 
 def deskew(image):
@@ -44,21 +44,29 @@ def deskew(image):
     return rotation_number
 
 
-def preprocess(input_file, output_file):
-    # imgPath = "./images/5-rotated.jpg"
-    imgPath = input_file
-    img = io.imread(imgPath, as_gray=True)
-    # binarize input image and apply local theresould
-    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2)
-    binarizedImage = img >= adaptiveThresh
+parser = argparse.ArgumentParser(
+    description="Pre-processes an image and prepares it for OCR.")
 
-    # Fixing document skew
-    rotationAngle = deskew(binarizedImage)
-    fixedImage = transform.rotate(
-        binarizedImage, rotationAngle, cval=1, mode="constant"
-    )
-    # finalImage = fixedImage * 255
-    # vv = viewer.ImageViewer(binarizedImage)
-    # vv.show()
-    io.imsave(output_file, fixedImage)
-    # io.imsave(output_file,util.dtype.img_as_ubyte(binarizedImage) )
+parser.add_argument(
+    "source", help="The path for the source image.")
+
+parser.add_argument(
+    "dest", help="The path for the cleaned-up image.")
+
+args = parser.parse_args()
+
+# Read source image
+img = io.imread(args.source, as_gray=True)
+
+# Binarize input image and apply local theresould
+adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2)
+binarizedImage = img >= adaptiveThresh
+
+# Fix document skew
+rotationAngle = deskew(binarizedImage)
+fixedImage = transform.rotate(
+    binarizedImage, rotationAngle, cval=1, mode="constant"
+)
+
+# Save result
+io.imsave(args.dest, fixedImage)

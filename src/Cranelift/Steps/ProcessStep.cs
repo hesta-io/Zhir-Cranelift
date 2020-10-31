@@ -60,30 +60,35 @@ namespace Cranelift.Steps
         [JobDisplayName("Processing job {0}")]
         public async Task Execute(string jobId, PerformContext context)
         {
-
             context.WriteLine($"Processing {jobId}");
 
             using var connection = await _dbContext.OpenOcrConnectionAsync();
 
             // Step 1: Make sure the job is not processed
             var job = await connection.GetJobAsync(jobId);
-            if (job.Status != ModelConstants.Queued)
+            if (job.HasFinished())
             {
-                context.WriteLine($"This job is not in the 'queued' status. It might already be processed, or it's not ready to be processed yet.");
+                context.WriteLine($"This job is already processed.");
                 return;
             }
 
             try
             {
+                context.CancellationToken.ThrowIfCancellationRequested();
+
                 job.Status = ModelConstants.Processing;
                 job.ProcessedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
+
+                context.CancellationToken.ThrowIfCancellationRequested();
 
                 // Step 2: Download images
                 var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
                 var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
 
                 await _storage.DownloadBlobs(originalPrefix, originalPath);
+
+                context.CancellationToken.ThrowIfCancellationRequested();
 
                 // TODO: Make sure user has enough balance!
 
@@ -105,22 +110,25 @@ namespace Cranelift.Steps
 
                 var parallelizationDegree = _options.ParallelPagesCount;
 
-                var tasks = pages.Select(p => ProcessPage(job, p)).ToArray();
-
                 var count = 0;
-                var chunks = tasks.Chunk(parallelizationDegree).ToArray();
+                var chunks = pages.Chunk(parallelizationDegree).ToArray();
+
+                context.CancellationToken.ThrowIfCancellationRequested();
+
+                await connection.DeletePreviousPages(job);
 
                 // Process the pages
                 foreach (var chunk in chunks)
                 {
-                    await Task.WhenAll(chunk);
+                    var tasks = chunk.Select(p => ProcessPage(job, p)).ToArray();
+                    await Task.WhenAll(tasks);
 
-                    foreach (var page in chunk.Where(t => t.Result.Succeeded == false))
+                    foreach (var task in tasks.Where(t => t.Result.Succeeded == false))
                     {
-                        context.WriteLine($"Failed to process page: {page.Result.Name}. Output:\n{page.Result.Result}");
+                        context.WriteLine($"Failed to process page: {task.Result.Name}. Output:\n{task.Result.Result}");
                     }
 
-                    if (chunk.Any(t => t.Result.Succeeded == false))
+                    if (tasks.Any(t => t.Result.Succeeded == false))
                     {
                         job.Status = ModelConstants.Failed;
                         job.FailingReason = "Failed to process one or more pages.";
@@ -131,7 +139,11 @@ namespace Cranelift.Steps
                         count += parallelizationDegree;
                         context.WriteLine($"Progress: {count}/{job.PageCount}");
                     }
+
+                    context.CancellationToken.ThrowIfCancellationRequested();
                 }
+
+                context.CancellationToken.ThrowIfCancellationRequested();
 
                 if (job.Status != ModelConstants.Failed)
                 {
@@ -147,10 +159,13 @@ namespace Cranelift.Steps
                     // TODO: Update balance?
                 }
 
+                context.CancellationToken.ThrowIfCancellationRequested();
+
                 // Update job :)
                 job.FinishedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
             }
+            // Question: catch OperationCanceledException ?
             catch (Exception ex)
             {
                 // Question: Should we fail the job?
@@ -166,7 +181,7 @@ namespace Cranelift.Steps
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
 
-            var success = await Preprocess(page.FullPath, donePath);
+            var success = await Clean(page.FullPath, donePath);
 
             if (success)
             {
@@ -189,16 +204,16 @@ namespace Cranelift.Steps
             return page;
         }
 
-        private async Task<bool> Preprocess(string input, string output)
+        private async Task<bool> Clean(string input, string output)
         {
-            var preProcessPath = Path.Combine(_environment.ContentRootPath, "Dependencies/ocr-preprocess");
-            var scriptPath = Path.Combine(preProcessPath, "src/pre-process.py");
+            var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");
+            var scriptPath = Path.Combine(workingDir, "src/clean.py");
 
             Directory.CreateDirectory(Path.GetDirectoryName(output));
 
-            var result = await _pythonHelper.Run(new[] { scriptPath, "-i", input, "-o", output }, options =>
+            var result = await _pythonHelper.Run(new[] { scriptPath, input, output }, options =>
             {
-                options.WorkingDirectory(preProcessPath);
+                options.WorkingDirectory(workingDir);
             });
 
             return result.Success;
@@ -219,39 +234,42 @@ namespace Cranelift.Steps
 
         private async Task<TesseractResult> RunTesseract(string imageFile, params string[] languages)
         {
-            var tempOutputFile = Path.GetTempFileName();
-            var modelsPath = Path.Combine(_environment.ContentRootPath, "Dependencies", "models");
-
-            if (languages is null || languages.Length == 0)
-            {
-                languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
-                                  .Select(f => Path.GetFileNameWithoutExtension(f))
-                                  .Where(f => f.ToLowerInvariant().StartsWith("ckb"))
-                                  .ToArray();
-            }
-            else if (languages[0].ToLowerInvariant() == "all")
-            {
-                languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
-                                  .Select(f => Path.GetFileNameWithoutExtension(f))
-                                  .ToArray();
-            }
+            // The output format depends on the destination extension!
+            var tempOutputFile = Path.GetTempFileName() + ".txt";
 
             try
             {
-                var arguments = new[] { imageFile, tempOutputFile, "-l", string.Join("+", languages) };
+                var modelsPath = Path.Combine(_environment.ContentRootPath, "Dependencies", "models");
 
-                var command = Command.Run("tesseract", arguments, options =>
+                if (languages is null || languages.Length == 0)
                 {
+                    languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
+                                      .Select(f => Path.GetFileNameWithoutExtension(f))
+                                      .Where(f => f.ToLowerInvariant().StartsWith("ckb"))
+                                      .ToArray();
+                }
+                else if (languages[0].ToLowerInvariant() == "all")
+                {
+                    languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
+                                      .Select(f => Path.GetFileNameWithoutExtension(f))
+                                      .ToArray();
+                }
+
+                var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");
+                var scriptPath = Path.Combine(workingDir, "src/tess.py");
+
+                var langs = string.Join("+", languages);
+                var result = await _pythonHelper.Run(new[] { scriptPath, imageFile, tempOutputFile, "--langs", langs }, options =>
+                {
+                    options.WorkingDirectory(workingDir);
+
                     options.EnvironmentVariables(new Dictionary<string, string>
                     {
                         { "TESSDATA_PREFIX", modelsPath }
                     });
                 });
 
-                await command.Task; // Wait for the process to exit
-
-                tempOutputFile += ".txt"; // tesseract adds .txt at the end of the filename!
-                if (command.Result.Success)
+                if (result.Success)
                 {
                     var output = File.ReadAllText(tempOutputFile);
                     return new TesseractResult
@@ -262,7 +280,7 @@ namespace Cranelift.Steps
                 }
                 else
                 {
-                    var lines = command.GetOutputAndErrorLines();
+                    var lines = result.StandardOutput;
                     return new TesseractResult
                     {
                         OutputOrError = string.Join(Environment.NewLine, lines),
@@ -272,7 +290,8 @@ namespace Cranelift.Steps
             }
             finally
             {
-                File.Delete(tempOutputFile);
+                if (File.Exists(tempOutputFile))
+                    File.Delete(tempOutputFile);
             }
         }
     }

@@ -38,6 +38,15 @@ namespace Cranelift.Helpers
             return await connection.QueryFirstOrDefaultAsync<Job>(sql);
         }
 
+        public static async Task DeletePreviousPages(this DbConnection connection, Job job)
+        {
+            var sql = $"UPDATE page SET deleted = 1 WHERE job_id = '{job.Id}'";
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            await command.ExecuteNonQueryAsync();
+        }
+
         public static async Task InsertPage(this DbConnection connection, Page page)
         {
             var sql = $@"INSERT INTO page
@@ -75,7 +84,7 @@ failing_reason=@failingReason, deleted=@deleted
 WHERE id='{job.Id}'";
 
             command.AddParameterWithValue("name", job.Name);
-            command.AddParameterWithValue("queuedAt", job.QueudAt);
+            command.AddParameterWithValue("queuedAt", job.QueuedAt);
             command.AddParameterWithValue("processedAt", job.ProcessedAt);
             command.AddParameterWithValue("finishedAt", job.FinishedAt);
             command.AddParameterWithValue("failingReason", job.FailingReason);
