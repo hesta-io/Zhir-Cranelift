@@ -24,10 +24,9 @@ namespace Cranelift.Helpers
         public async Task<CommandResult> Run(string[] arguments, Action<Shell.Options> options)
         {
             var command = Command.Run(_options.Path, arguments, options);
-
             await command.Task;
 
             return command.Result;
         }
-}
+    }
 }

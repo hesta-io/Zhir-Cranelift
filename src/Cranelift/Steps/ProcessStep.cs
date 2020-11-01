@@ -9,6 +9,8 @@ using Medallion.Shell;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 
+using MySql.Data.MySqlClient;
+
 using Renci.SshNet.Common;
 
 using System;
@@ -20,6 +22,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using System.Transactions;
 
 namespace Cranelift.Steps
 {
@@ -62,18 +65,20 @@ namespace Cranelift.Steps
         {
             context.WriteLine($"Processing {jobId}");
 
-            using var connection = await _dbContext.OpenOcrConnectionAsync();
-
-            // Step 1: Make sure the job is not processed
-            var job = await connection.GetJobAsync(jobId);
-            if (job.HasFinished())
+            using (var connection = await _dbContext.OpenOcrConnectionAsync())
+            using (var transaction = await connection.BeginTransactionAsync(
+                // We want the job status changes to be seen by queries outside this transaction
+                System.Data.IsolationLevel.ReadUncommitted,
+                context.CancellationToken.ShutdownToken))
             {
-                context.WriteLine($"This job is already processed.");
-                return;
-            }
+                // Step 1: Make sure the job is not processed
+                var job = await connection.GetJobAsync(jobId);
+                if (job.HasFinished())
+                {
+                    context.WriteLine($"This job is already processed.");
+                    return;
+                }
 
-            try
-            {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 job.Status = ModelConstants.Processing;
@@ -86,7 +91,7 @@ namespace Cranelift.Steps
                 var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
                 var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
 
-                await _storage.DownloadBlobs(originalPrefix, originalPath);
+                await _storage.DownloadBlobs(originalPrefix, originalPath, context.CancellationToken.ShutdownToken);
 
                 context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -120,7 +125,7 @@ namespace Cranelift.Steps
                 // Process the pages
                 foreach (var chunk in chunks)
                 {
-                    var tasks = chunk.Select(p => ProcessPage(job, p)).ToArray();
+                    var tasks = chunk.Select(p => ProcessPage(job, p, context.CancellationToken.ShutdownToken)).ToArray();
                     await Task.WhenAll(tasks);
 
                     foreach (var task in tasks.Where(t => t.Result.Succeeded == false))
@@ -136,6 +141,11 @@ namespace Cranelift.Steps
                     }
                     else
                     {
+                        foreach (var page in chunk)
+                        {
+                            await connection.InsertPage(page);
+                        }
+
                         count += parallelizationDegree;
                         context.WriteLine($"Progress: {count}/{job.PageCount}");
                     }
@@ -154,7 +164,7 @@ namespace Cranelift.Steps
                     var bytes = Encoding.UTF8.GetBytes(text);
                     var key = $"{Constants.Done}/{job.UserId}/{job.Id}/result.txt";
 
-                    await _storage.UploadBlob(key, new MemoryStream(bytes), "text/plain");
+                    await _storage.UploadBlob(key, new MemoryStream(bytes), "text/plain", context.CancellationToken.ShutdownToken);
 
                     // TODO: Update balance?
                 }
@@ -164,47 +174,37 @@ namespace Cranelift.Steps
                 // Update job :)
                 job.FinishedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
-            }
-            // Question: catch OperationCanceledException ?
-            catch (Exception ex)
-            {
-                // Question: Should we fail the job?
-                // Retry mechanism?
-                job.Status = ModelConstants.Queued;
-                await connection.UpdateJob(job);
-                throw;
+
+                await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
             }
         }
 
-        private async Task<Page> ProcessPage(Job job, Page page)
+        private async Task<Page> ProcessPage(Job job, Page page, System.Threading.CancellationToken cancellationToken)
         {
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
 
-            var success = await Clean(page.FullPath, donePath);
+            var success = await Clean(page.FullPath, donePath, cancellationToken);
 
             if (success)
             {
-                var result = await RunTesseract(donePath, "ckb", "eng");
+                var result = await RunTesseract(donePath, cancellationToken, "ckb", "eng");
 
                 if (success)
                 {
                     page.Result = result.OutputOrError;
                     // page.FormatedResult
-                    success = await _storage.UploadBlob(doneKey, donePath);
+                    success = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
                 }
             }
 
             page.FinishedProcessingAt = DateTime.UtcNow;
             page.Succeeded = success;
 
-            using var connection = await _dbContext.OpenOcrConnectionAsync();
-            await connection.InsertPage(page);
-
             return page;
         }
 
-        private async Task<bool> Clean(string input, string output)
+        private async Task<bool> Clean(string input, string output, System.Threading.CancellationToken cancellationToken)
         {
             var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");
             var scriptPath = Path.Combine(workingDir, "src/clean.py");
@@ -213,6 +213,7 @@ namespace Cranelift.Steps
 
             var result = await _pythonHelper.Run(new[] { scriptPath, input, output }, options =>
             {
+                options.CancellationToken(cancellationToken);
                 options.WorkingDirectory(workingDir);
             });
 
@@ -232,7 +233,10 @@ namespace Cranelift.Steps
             public string OutputOrError { get; set; }
         }
 
-        private async Task<TesseractResult> RunTesseract(string imageFile, params string[] languages)
+        private async Task<TesseractResult> RunTesseract(
+            string imageFile, 
+            System.Threading.CancellationToken cancellationToken, 
+            params string[] languages)
         {
             // The output format depends on the destination extension!
             var tempOutputFile = Path.GetTempFileName() + ".txt";
@@ -259,9 +263,12 @@ namespace Cranelift.Steps
                 var scriptPath = Path.Combine(workingDir, "src/tess.py");
 
                 var langs = string.Join("+", languages);
-                var result = await _pythonHelper.Run(new[] { scriptPath, imageFile, tempOutputFile, "--langs", langs }, options =>
+                var result = await _pythonHelper.Run(
+                    new[] { scriptPath, imageFile, tempOutputFile, "--langs", langs },
+                    options =>
                 {
                     options.WorkingDirectory(workingDir);
+                    options.CancellationToken(cancellationToken);
 
                     options.EnvironmentVariables(new Dictionary<string, string>
                     {
@@ -271,7 +278,7 @@ namespace Cranelift.Steps
 
                 if (result.Success)
                 {
-                    var output = File.ReadAllText(tempOutputFile);
+                    var output = await File.ReadAllTextAsync(tempOutputFile);
                     return new TesseractResult
                     {
                         OutputOrError = output,

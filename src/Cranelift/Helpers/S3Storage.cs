@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cranelift.Helpers
@@ -20,17 +21,22 @@ namespace Cranelift.Helpers
 
     public static class StorageExtensions
     {
-        public static async Task DownloadBlobs(this IStorage storage, string prefix, string directory)
+        public static async Task DownloadBlobs(this IStorage storage, string prefix, string directory, System.Threading.CancellationToken cancellationToken)
         {
             await storage.DownloadBlobs(prefix, key =>
             {
                 var path = Path.Combine(directory, key);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 return File.OpenWrite(path);
-            });
+            }, cancellationToken);
         }
 
-        public static async Task<bool> UploadBlob(this IStorage storage, string key, string filePath, string contentType = null)
+        public static async Task<bool> UploadBlob(
+            this IStorage storage, 
+            string key, 
+            string filePath, 
+            string contentType = null,
+            CancellationToken cancellationToken = default)
         {
             if (contentType is null)
             {
@@ -45,14 +51,14 @@ namespace Cranelift.Helpers
             }
 
             using var stream = File.OpenRead(filePath);
-            return await storage.UploadBlob(key, stream, contentType);
+            return await storage.UploadBlob(key, stream, contentType, cancellationToken);
         }
     }
 
     public interface IStorage
     {
-        Task DownloadBlobs(string prefix, Func<string, Stream> getDestinationStream);
-        Task<bool> UploadBlob(string key, Stream data, string contentType);
+        Task DownloadBlobs(string prefix, Func<string, Stream> getDestinationStream, CancellationToken cancellationToken);
+        Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken);
     }
 
     public class S3Storage : IStorage
@@ -71,7 +77,8 @@ namespace Cranelift.Helpers
 
         public async Task DownloadBlobs(
             string prefix,
-            Func<string, Stream> getDestinationStream)
+            Func<string, Stream> getDestinationStream,
+            CancellationToken cancellationToken)
         {
             // NOTE: This method only lists top 1000 objects!
 
@@ -81,7 +88,7 @@ namespace Cranelift.Helpers
                 BucketName = _options.BucketName,
             };
 
-            var response = await _client.ListObjectsV2Async(query);
+            var response = await _client.ListObjectsV2Async(query, cancellationToken);
 
             foreach (var blob in response.S3Objects.Where(o => o.Key.EndsWith("/") == false))
             {
@@ -92,7 +99,7 @@ namespace Cranelift.Helpers
             }
         }
 
-        public async Task<bool> UploadBlob(string key, Stream data, string contentType)
+        public async Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken)
         {
             var request = new PutObjectRequest
             {
@@ -102,7 +109,7 @@ namespace Cranelift.Helpers
                 BucketName = _options.BucketName,
             };
 
-            var response = await _client.PutObjectAsync(request);
+            var response = await _client.PutObjectAsync(request, cancellationToken);
             return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
         }
     }
