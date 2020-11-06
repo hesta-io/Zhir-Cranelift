@@ -8,15 +8,16 @@ except ImportError:
 import pytesseract
 import argparse
 import sys
+import fitz # PyMuPDF
 
 parser = argparse.ArgumentParser(
-    description="Runs tesseract on an image and saves the result. The result will either be in PDF format or Plain text format based on the destination extension.")
+    description="Runs tesseract on an image and saves the result. The result will be in both PDF format and Plain text format.")
 
 parser.add_argument(
     "source", help="The path for the source image.")
 
 parser.add_argument(
-    "dest", help="The destination path of the result.")
+    "dest", help="The destination folder of the result. Two files will be created: result.pdf and result.txt")
 
 parser.add_argument(
     "--langs", help="Language models to be used for the OCR. Examples: ckb or ckb+eng", default="ckb"
@@ -24,19 +25,19 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if str.endswith(args.dest, ".txt"):
-    result = pytesseract.image_to_string(
-        Image.open(args.source), lang=args.langs)
-    with open(args.dest, "w", encoding="utf-8") as f:
-        f.write(result)
-    print("Done :)")
+pdf_path = args.dest + '/result.pdf'
+text_path = args.dest + '/result.txt'
 
-elif str.endswith(args.dest, ".pdf"):
-    pdf = pytesseract.image_to_pdf_or_hocr(
+pdf = pytesseract.image_to_pdf_or_hocr(
         args.source, extension='pdf', lang=args.langs)
-    with open(args.dest, 'w+b') as f:
-        f.write(pdf)  # pdf type is bytes by default
-    print("Done :)")
-else:
-    print("Invalid format.")
-    sys.exit(-1)
+with open(pdf_path, 'w+b') as f:
+    f.write(pdf)  # pdf type is bytes by default
+
+doc = fitz.open(pdf_path)
+page = doc.loadPage(0) # Our pdfs only have one page!
+text = page.getText("text")
+
+with open(text_path, "w", encoding="utf-8") as f:
+    f.write(text)
+
+print("Done :)")

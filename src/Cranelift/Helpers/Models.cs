@@ -78,5 +78,6 @@ namespace Cranelift.Helpers
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
         public string FullPath { get; set; }
+        public byte[] PdfResult { get; internal set; }
     }
 }

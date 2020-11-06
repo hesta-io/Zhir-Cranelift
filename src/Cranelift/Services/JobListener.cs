@@ -79,7 +79,7 @@ namespace Cranelift.Services
 
                             foreach (var job in pendingJobs)
                             {
-                                var jobId = scheduler.Enqueue<ProcessStep>(s => s.Execute(job.Id, null));
+                                var jobId = scheduler.Enqueue<OcrJob>(s => s.ExecuteOcrJob(job.Id, null));
                                 // TODO: What if we store the hangfire job id in the databse row?
                             }
 

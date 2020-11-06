@@ -2,6 +2,10 @@
 {
     public static class Constants
     {
+        public const string Pdf = "application/pdf";
+        public const string PlainText = "text/plain";
+        public const string Docx = "application/vnd.openxmlformats-officedocument.wordprocessing";
+
         public const string OcrConnectionName = "OcrConnection";
         public const string HangfireConnectionName = "HangfireConnection";
 

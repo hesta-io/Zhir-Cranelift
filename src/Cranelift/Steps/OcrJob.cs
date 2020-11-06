@@ -32,7 +32,7 @@ namespace Cranelift.Steps
         public int ParallelPagesCount { get; set; }
     }
 
-    public class ProcessStep
+    public class OcrJob
     {
         public class ProcessResult
         {
@@ -44,23 +44,27 @@ namespace Cranelift.Steps
         private readonly IStorage _storage;
         private readonly IWebHostEnvironment _environment;
         private readonly PythonHelper _pythonHelper;
+        private readonly DocumentHelper _documentHelper;
         private readonly WorkerOptions _options;
 
-        public ProcessStep(
+        public OcrJob(
             IDbContext dbContext,
             IStorage storage,
             IConfiguration configuration,
             IWebHostEnvironment _environment,
-            PythonHelper pythonHelper)
+            PythonHelper pythonHelper,
+            DocumentHelper pdfHelper)
         {
             _dbContext = dbContext;
             _storage = storage;
             this._environment = _environment;
             _pythonHelper = pythonHelper;
+            _documentHelper = pdfHelper;
             _options = configuration.GetSection(Constants.Worker).Get<WorkerOptions>();
         }
 
-        public async Task Execute(string jobId, PerformContext context)
+        [JobDisplayName("OCR Job ({0})")]
+        public async Task ExecuteOcrJob(string jobId, PerformContext context)
         {
             context.WriteLine($"Processing {jobId}");
 
@@ -154,16 +158,46 @@ namespace Cranelift.Steps
 
                 if (job.Status != ModelConstants.Failed)
                 {
-                    job.Status = ModelConstants.Completed;
+                    var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
 
-                    // TODO: Generate Word/PDF file!
+                    context.WriteLine("Generating pdf file...");
+                    var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
+                    await _storage.UploadBlob(
+                        $"{folderKey}/result.pdf",
+                        new MemoryStream(pdfBytes),
+                        Constants.Pdf,
+                        context.CancellationToken.ShutdownToken);
+
+                    context.WriteLine("Generating text file...");
                     var text = string.Join("\n\n\n", pages.Select(p => p.Result));
-                    var bytes = Encoding.UTF8.GetBytes(text);
-                    var key = $"{Constants.Done}/{job.UserId}/{job.Id}/result.txt";
+                    var textBytes = Encoding.UTF8.GetBytes(text);
+                    await _storage.UploadBlob(
+                        $"{folderKey}/result.txt", 
+                        new MemoryStream(textBytes), 
+                        Constants.PlainText, 
+                        context.CancellationToken.ShutdownToken);
 
-                    await _storage.UploadBlob(key, new MemoryStream(bytes), "text/plain", context.CancellationToken.ShutdownToken);
+                    context.WriteLine("Generating docx file...");
+                    var wordDocument = _documentHelper.CreateWordDocument(pages.Select(p => p.Result).ToArray());
+                    await _storage.UploadBlob(
+                       $"{folderKey}/result.docx",
+                       wordDocument,
+                       Constants.Docx,
+                       context.CancellationToken.ShutdownToken);
 
                     // TODO: Update balance?
+                    job.Status = ModelConstants.Completed;
+
+                    context.WriteLine("Charging for the job...");
+                    await connection.InsertTransaction(new UserTransaction
+                    {
+                        UserId = job.UserId,
+                        Amount = -(job.PricePerPage * job.PageCount) ?? 0,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = job.UserId,
+                        PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
+                        TypeId = UserTransaction.Types.OcrJob,
+                    });
                 }
 
                 context.CancellationToken.ThrowIfCancellationRequested();
@@ -171,17 +205,9 @@ namespace Cranelift.Steps
                 // Update job :)
                 job.FinishedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
-                await connection.InsertTransaction(new UserTransaction
-                {
-                    UserId = job.UserId,
-                    Amount = -(job.PricePerPage * job.PageCount) ?? 0,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = job.UserId,
-                    PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
-                    TypeId = UserTransaction.Types.OcrJob,
-                });
 
                 await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
+                context.WriteLine("Done :)");
             }
         }
 
@@ -190,22 +216,27 @@ namespace Cranelift.Steps
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
 
-            var success = await Clean(page.FullPath, donePath, cancellationToken);
+            page.Succeeded = await Clean(page.FullPath, donePath, cancellationToken);
 
-            if (success)
+            if (page.Succeeded)
             {
                 var result = await RunTesseract(donePath, cancellationToken, "ckb", "eng");
+                page.Succeeded = result.Success;
 
-                if (success)
+                if (page.Succeeded)
                 {
-                    page.Result = result.OutputOrError;
+                    page.Result = result.TextOutput;
+                    page.PdfResult = result.PdfOutput;
                     // page.FormatedResult
-                    success = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
+                    page.Succeeded = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    page.Result = result.TextOutput;
                 }
             }
 
             page.FinishedProcessingAt = DateTime.UtcNow;
-            page.Succeeded = success;
 
             return page;
         }
@@ -236,7 +267,8 @@ namespace Cranelift.Steps
         private class TesseractResult
         {
             public bool Success { get; set; }
-            public string OutputOrError { get; set; }
+            public string TextOutput { get; set; }
+            public byte[] PdfOutput { get; internal set; }
         }
 
         private async Task<TesseractResult> RunTesseract(
@@ -244,8 +276,8 @@ namespace Cranelift.Steps
             System.Threading.CancellationToken cancellationToken, 
             params string[] languages)
         {
-            // The output format depends on the destination extension!
-            var tempOutputFile = Path.GetTempFileName() + ".txt";
+            var tempOutputDir = Path.GetTempFileName().Replace(".tmp", "");
+            Directory.CreateDirectory(tempOutputDir);
 
             try
             {
@@ -270,7 +302,7 @@ namespace Cranelift.Steps
 
                 var langs = string.Join("+", languages);
                 var result = await _pythonHelper.Run(
-                    new[] { scriptPath, imageFile, tempOutputFile, "--langs", langs },
+                    new[] { scriptPath, imageFile, tempOutputDir, "--langs", langs },
                     options =>
                 {
                     options.WorkingDirectory(workingDir);
@@ -284,27 +316,28 @@ namespace Cranelift.Steps
 
                 if (result.Success)
                 {
-                    var output = await File.ReadAllTextAsync(tempOutputFile);
+                    var output = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.txt"));
                     return new TesseractResult
                     {
-                        OutputOrError = output,
+                        TextOutput = output,
+                        PdfOutput = await File.ReadAllBytesAsync(Path.Combine(tempOutputDir, "result.pdf")),
                         Success = true
                     };
                 }
                 else
                 {
-                    var lines = result.StandardOutput;
+                    var lines = result.StandardError + Environment.NewLine + result.StandardOutput;
                     return new TesseractResult
                     {
-                        OutputOrError = string.Join(Environment.NewLine, lines),
+                        TextOutput = string.Join(Environment.NewLine, lines),
                         Success = false
                     };
                 }
             }
             finally
             {
-                if (File.Exists(tempOutputFile))
-                    File.Delete(tempOutputFile);
+                if (Directory.Exists(tempOutputDir))
+                    Directory.Delete(tempOutputDir, recursive: true);
             }
         }
     }
