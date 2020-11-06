@@ -73,6 +73,19 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
 
             await command.ExecuteNonQueryAsync();
         }
+        
+        public static async Task InsertTransaction(this DbConnection connection, UserTransaction transaction)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = $@"INSERT INTO user_transaction
+(user_id, type_id, payment_medium_id, amount, created_at, created_by)
+VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @createdAt, '{transaction.CreatedBy}');
+";
+
+            command.AddParameterWithValue("createdAt", transaction.CreatedAt);
+
+            await command.ExecuteNonQueryAsync();
+        }
 
         public static async Task UpdateJob(this DbConnection connection, Job job)
         {

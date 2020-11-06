@@ -60,15 +60,12 @@ namespace Cranelift.Steps
             _options = configuration.GetSection(Constants.Worker).Get<WorkerOptions>();
         }
 
-        [JobDisplayName("Processing job {0}")]
         public async Task Execute(string jobId, PerformContext context)
         {
             context.WriteLine($"Processing {jobId}");
 
             using (var connection = await _dbContext.OpenOcrConnectionAsync())
             using (var transaction = await connection.BeginTransactionAsync(
-                // We want the job status changes to be seen by queries outside this transaction
-                System.Data.IsolationLevel.ReadUncommitted,
                 context.CancellationToken.ShutdownToken))
             {
                 // Step 1: Make sure the job is not processed
@@ -174,6 +171,15 @@ namespace Cranelift.Steps
                 // Update job :)
                 job.FinishedAt = DateTime.UtcNow;
                 await connection.UpdateJob(job);
+                await connection.InsertTransaction(new UserTransaction
+                {
+                    UserId = job.UserId,
+                    Amount = -(job.PricePerPage * job.PageCount) ?? 0,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = job.UserId,
+                    PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
+                    TypeId = UserTransaction.Types.OcrJob,
+                });
 
                 await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
             }
