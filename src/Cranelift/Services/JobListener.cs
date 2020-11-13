@@ -8,6 +8,7 @@ using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using MySql.Data.MySqlClient;
@@ -62,29 +63,38 @@ namespace Cranelift.Services
                 double waitSeconds = 1;
                 using (var scope = ServiceProvider.CreateScope())
                 {
-                    ListenerOptions options = GetOptions(scope.ServiceProvider);
-                    waitSeconds = options.IntervalSeconds;
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<JobListener>>();
 
-                    var scheduler = scope.ServiceProvider.GetService<IBackgroundJobClient>();
-
-                    var context = scope.ServiceProvider.GetService<IDbContext>();
-
-                    using (var connection = await context.OpenConnectionAsync(Constants.OcrConnectionName, cancellationToken))
+                    try
                     {
-                        var pendingJobs = await connection.GetPendingJobsAsync();
+                        ListenerOptions options = GetOptions(scope.ServiceProvider);
+                        waitSeconds = options.IntervalSeconds;
 
-                        if (pendingJobs.Any())
+                        var scheduler = scope.ServiceProvider.GetService<IBackgroundJobClient>();
+
+                        var context = scope.ServiceProvider.GetService<IDbContext>();
+
+                        using (var connection = await context.OpenConnectionAsync(Constants.OcrConnectionName, cancellationToken))
                         {
-                            // var api = JobStorage.Current.GetMonitoringApi();
+                            var pendingJobs = await connection.GetPendingJobsAsync();
 
-                            foreach (var job in pendingJobs)
+                            if (pendingJobs.Any())
                             {
-                                var jobId = scheduler.Enqueue<OcrJob>(s => s.ExecuteOcrJob(job.Id, null));
-                                // TODO: What if we store the hangfire job id in the databse row?
-                            }
+                                // var api = JobStorage.Current.GetMonitoringApi();
 
-                            await UpdateJobStatusAsync(connection, pendingJobs.Select(j => j.Id));
+                                foreach (var job in pendingJobs)
+                                {
+                                    var jobId = scheduler.Enqueue<OcrJob>(s => s.ExecuteOcrJob(job.Id, null));
+                                    // TODO: What if we store the hangfire job id in the databse row?
+                                }
+
+                                await UpdateJobStatusAsync(connection, pendingJobs.Select(j => j.Id));
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An error occured during listening to jobs.");
                     }
                 }
 
