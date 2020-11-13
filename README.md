@@ -5,7 +5,8 @@ The background job processing controller for ZhirOCR.
 
 1. Open `Cranelift.sln` in Visual Studio 2019
 2. Right Click on `Cranelift` project in Solution Explorer and Click on `Manage User Secrets`. This will open `secrets.json`.
-![user-secrets](\docs\images\user-secrets.jpg)
+   ![user-secrets](./docs/images/user-secrets.jpg)
+
 3. Paste this in `secrets.json`:
 
 ```json
@@ -40,8 +41,7 @@ The background job processing controller for ZhirOCR.
 5. Create an empty database for Hangfire called `zhir-hangfire`.
 
 6. In Visual Studio 2019, use Kestrel to run Cranelift:
-
-   ![run-configuration](F:\ZhirAI\Cranelift\docs\images\run-configuration.jpg)
+   ![run-configuration](./docs/images/run-configuration.jpg)
 
 7. In Visual Studio 2019 press CTRL + F5 to run Cranelift
 
