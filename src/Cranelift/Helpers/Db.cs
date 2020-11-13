@@ -116,8 +116,6 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             command.CommandText = $@"INSERT INTO user_transaction
 (user_id, type_id, payment_medium_id, amount, created_at, created_by)
 VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @createdAt, '{transaction.CreatedBy}');
-
-update `user` u set balance = (select sum(amount) from user_transaction ut where ut.user_id = u.id) where u.id = {transaction.UserId}
 ";
 
             command.AddParameterWithValue("createdAt", transaction.CreatedAt);
