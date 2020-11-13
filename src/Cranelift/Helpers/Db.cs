@@ -3,7 +3,7 @@
 using Microsoft.Extensions.Configuration;
 
 using MySql.Data.MySqlClient;
-
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
@@ -32,13 +32,49 @@ namespace Cranelift.Helpers
             return await connection.QueryAsync<Job>(sql);
         }
 
+        public class TranactionViewModel
+        {
+            public decimal Amount { get; set; }
+            public string PaymentMethod { get; set; }
+            public string Type { get; set; }
+            public DateTime Date { get; set; }
+        }
+
+        public static async Task<IEnumerable<TranactionViewModel>> GetTransactions(this DbConnection connection, int userId)
+        {
+            var sql = $@"select ut.amount, pm.name as PaymentMethod, tt.name as Type, ut.created_at as Date from user_transaction ut
+left join payment_medium pm on pm.id = ut.payment_medium_id 
+left join transaction_type tt on tt.id = ut.type_id
+where ut.user_id = {userId}";
+
+            return await connection.QueryAsync<TranactionViewModel>(sql);
+        }
+
+        private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at,
+		(select sum(amount) from user_transaction ut where ut.user_id = u.id) as balance,
+		(select sum(page_count) from job j2 where j2.user_id = u.id) as count_pages,
+		(select count(id) from job j2 where j2.user_id = u.id) as count_jobs,
+		(select sum(abs(amount)) from user_transaction ut2 where ut2.user_id = u.id and ut2.amount < 0) as money_spent
+from `user` u";
+
+        public static async Task<IEnumerable<User>> GetUsersAsync(this DbConnection connection)
+        {
+            return await connection.QueryAsync<User>(UserQuery);
+        }
+
+        public static async Task<User> GetUserAsync(this DbConnection connection, int id)
+        {
+            var sql = UserQuery + $" where u.id = {id}";
+            return await connection.QueryFirstOrDefaultAsync<User>(sql);
+        }
+
         public static async Task<Job> GetJobAsync(this DbConnection connection, string id)
         {
             var sql = $"SELECT * FROM job WHERE id = '{id}'";
             return await connection.QueryFirstOrDefaultAsync<Job>(sql);
         }
 
-        public static async Task DeletePreviousPages(this DbConnection connection, Job job)
+        public static async Task DeletePreviousPagesAsync(this DbConnection connection, Job job)
         {
             var sql = $"UPDATE page SET deleted = 1 WHERE job_id = '{job.Id}'";
             using var command = connection.CreateCommand();
@@ -47,7 +83,7 @@ namespace Cranelift.Helpers
             await command.ExecuteNonQueryAsync();
         }
 
-        public static async Task InsertPage(this DbConnection connection, Page page)
+        public static async Task InsertPageAsync(this DbConnection connection, Page page)
         {
             var sql = $@"INSERT INTO page
 (id, name, user_id, job_id, started_processing_at, processed, finished_processing_at, succeeded, `result`, formated_result, deleted, created_at, created_by)
@@ -74,12 +110,14 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             await command.ExecuteNonQueryAsync();
         }
         
-        public static async Task InsertTransaction(this DbConnection connection, UserTransaction transaction)
+        public static async Task InsertTransactionAsync(this DbConnection connection, UserTransaction transaction)
         {
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
 (user_id, type_id, payment_medium_id, amount, created_at, created_by)
 VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @createdAt, '{transaction.CreatedBy}');
+
+update `user` u set balance = (select sum(amount) from user_transaction ut where ut.user_id = u.id) where u.id = {transaction.UserId}
 ";
 
             command.AddParameterWithValue("createdAt", transaction.CreatedAt);
@@ -87,7 +125,7 @@ VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMedi
             await command.ExecuteNonQueryAsync();
         }
 
-        public static async Task UpdateJob(this DbConnection connection, Job job)
+        public static async Task UpdateJobAsync(this DbConnection connection, Job job)
         {
             var command = connection.CreateCommand();
             command.CommandText = $@"UPDATE job

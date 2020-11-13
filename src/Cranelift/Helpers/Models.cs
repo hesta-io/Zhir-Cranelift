@@ -39,6 +39,22 @@ namespace Cranelift.Helpers
         public int CreatedBy { get; set; }
     }
 
+    public class User
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string CompanyName { get; set; }
+        public string Email { get; set; }
+        public string PhoneNo { get; set; }
+        public bool? Deleted { get; set; }
+        public decimal? Balance { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        public int CountPages { get; set; }
+        public int CountJobs { get; set; }
+        public decimal MoneySpent { get; set; }
+    }
+
     public class Job
     {
         public string Id { get; set; }

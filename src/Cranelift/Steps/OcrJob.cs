@@ -84,7 +84,7 @@ namespace Cranelift.Steps
 
                 job.Status = ModelConstants.Processing;
                 job.ProcessedAt = DateTime.UtcNow;
-                await connection.UpdateJob(job);
+                await connection.UpdateJobAsync(job);
 
                 context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -121,7 +121,7 @@ namespace Cranelift.Steps
 
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                await connection.DeletePreviousPages(job);
+                await connection.DeletePreviousPagesAsync(job);
 
                 // Process the pages
                 foreach (var chunk in chunks)
@@ -144,7 +144,7 @@ namespace Cranelift.Steps
                     {
                         foreach (var page in chunk)
                         {
-                            await connection.InsertPage(page);
+                            await connection.InsertPageAsync(page);
                         }
 
                         count += parallelizationDegree;
@@ -189,7 +189,7 @@ namespace Cranelift.Steps
                     job.Status = ModelConstants.Completed;
 
                     context.WriteLine("Charging for the job...");
-                    await connection.InsertTransaction(new UserTransaction
+                    await connection.InsertTransactionAsync(new UserTransaction
                     {
                         UserId = job.UserId,
                         Amount = -(job.PricePerPage * job.PageCount) ?? 0,
@@ -204,7 +204,7 @@ namespace Cranelift.Steps
 
                 // Update job :)
                 job.FinishedAt = DateTime.UtcNow;
-                await connection.UpdateJob(job);
+                await connection.UpdateJobAsync(job);
 
                 await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
                 context.WriteLine("Done :)");
