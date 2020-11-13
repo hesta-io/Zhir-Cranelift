@@ -38,7 +38,8 @@ namespace Cranelift
                 .UseRecommendedSerializerSettings()
                 .UseStorage(new MySqlStorage(Configuration.GetConnectionString(Constants.HangfireConnectionName), new MySqlStorageOptions
                 {
-                    QueuePollInterval = TimeSpan.FromSeconds(1)
+                    QueuePollInterval = TimeSpan.FromSeconds(1),
+                    InvisibilityTimeout = TimeSpan.FromMinutes(5),
                 }))
                 .UseConsole());
 

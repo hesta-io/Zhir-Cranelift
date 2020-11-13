@@ -22,6 +22,23 @@ namespace Cranelift
             }
         }
 
+        public static int CountWords(this string text)
+        {
+            var removedCharacters = new[] { 
+                '٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩',
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                '-', '(', ')', '*', '&', '%', '$', '#', '@', '!',
+            };
+
+            foreach (var c in removedCharacters)
+            {
+                text = text.Replace(c.ToString(), "");
+            }
+
+            return text.Split(new[] { ' ', '\n', '\r', '.', '،', ',', '؛', ':', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Count(t => t.Length >= 3);
+        }
+
         // https://stackoverflow.com/a/21609968/7003797
         public static void AddParameterWithValue(this DbCommand command, string parameterName, object parameterValue)
         {

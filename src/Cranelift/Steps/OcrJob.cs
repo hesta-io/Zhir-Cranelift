@@ -188,11 +188,14 @@ namespace Cranelift.Steps
                     // TODO: Update balance?
                     job.Status = ModelConstants.Completed;
 
+                    const int minimumNumberOfWordsPerPage = 50;
+                    var paidPages = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
+
                     context.WriteLine("Charging for the job...");
                     await connection.InsertTransactionAsync(new UserTransaction
                     {
                         UserId = job.UserId,
-                        Amount = -(job.PricePerPage * job.PageCount) ?? 0,
+                        Amount = -(job.PricePerPage * paidPages) ?? 0,
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = job.UserId,
                         PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
