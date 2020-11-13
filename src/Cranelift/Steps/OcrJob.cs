@@ -220,7 +220,7 @@ namespace Cranelift.Steps
 
             if (page.Succeeded)
             {
-                var result = await RunTesseract(donePath, cancellationToken, "ckb", "eng");
+                var result = await RunTesseract(donePath, cancellationToken, "ckb", "ara");
                 page.Succeeded = result.Success;
 
                 if (page.Succeeded)
