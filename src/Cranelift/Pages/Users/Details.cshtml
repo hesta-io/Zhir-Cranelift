@@ -9,51 +9,82 @@
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Name</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.Name">
+            <input type="text" readonly class="form-control" value="@Model.Data.Name" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Company</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.CompanyName">
+            <input type="text" readonly class="form-control" value="@Model.Data.CompanyName" />
         </div>
     </div>
     <div class="row mb-2 mb-2">
         <label class="col-sm-4 col-form-label">Email</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.Email">
+            <input type="text" readonly class="form-control" value="@Model.Data.Email" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Phone Number</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.PhoneNo">
+            <input type="text" readonly class="form-control" value="@Model.Data.PhoneNo" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Balance</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.Balance?.ToString("N0")">
+            <input type="text" readonly class="form-control" value="@Model.Data.Balance?.ToString("N0")" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Number of pages scanned</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.CountPages.ToString("N0")">
+            <input type="text" readonly class="form-control" value="@Model.Data.CountPages.ToString("N0")" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Number of successful jobs submitted</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.CountJobs.ToString("N0")">
+            <input type="text" readonly class="form-control" value="@Model.Data.CountJobs.ToString("N0")" />
         </div>
     </div>
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Money spent</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.MoneySpent.ToString("N0")">
+            <input type="text" readonly class="form-control" value="@Model.Data.MoneySpent.ToString("N0")" />
         </div>
     </div>
+</form>
+
+<h2>Recharge</h2>
+
+@if (string.IsNullOrEmpty(Model.Message) == false)
+{
+    <div class="alert alert-@(Model.Success ? "success" : "danger")" role="alert">
+        @Model.Message
+    </div>
+}
+
+<form asp-page=".">
+    <div class="form-group">
+        <label asp-for="Amount">Amount: </label>
+        <input asp-for="Amount" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="PaymentMedium">Payment medium: </label>
+
+        <select class="form-control" asp-for="PaymentMedium">
+            <option value="1" selected>Zhir</option>
+            <option value="2">FastPay</option>
+            <option value="3">AsiaHawala</option>
+            <option value="4">ZainCash</option>
+            <option value="5">ZhirBalance</option>
+        </select>
+    </div>
+
+    <input asp-for="Id" type="hidden"/>
+   
+    <button type="submit" class="btn btn-primary">Recharge</button>
 </form>
 
 <h2>Transactions: </h2>
@@ -76,7 +107,7 @@
 
             <tr>
                 <th scope="row">@(i + 1)</th>
-                <td>@transaction.Amount</td>
+                <td>@transaction.Amount.ToString("N0")</td>
                 <td>@transaction.PaymentMethod</td>
                 <td>@transaction.Type</td>
                 <td>@transaction.Date.ToString("yyyy-MM-dd hh:mm tt UTCzz")</td>

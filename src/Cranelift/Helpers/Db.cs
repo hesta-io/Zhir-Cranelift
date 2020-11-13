@@ -45,7 +45,8 @@ namespace Cranelift.Helpers
             var sql = $@"select ut.amount, pm.name as PaymentMethod, tt.name as Type, ut.created_at as Date from user_transaction ut
 left join payment_medium pm on pm.id = ut.payment_medium_id 
 left join transaction_type tt on tt.id = ut.type_id
-where ut.user_id = {userId}";
+where ut.user_id = {userId}
+order by ut.created_at desc";
 
             return await connection.QueryAsync<TranactionViewModel>(sql);
         }
