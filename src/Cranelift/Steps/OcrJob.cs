@@ -172,13 +172,14 @@ namespace Cranelift.Steps
                     var text = string.Join("\n\n\n", pages.Select(p => p.Result));
                     var textBytes = Encoding.UTF8.GetBytes(text);
                     await _storage.UploadBlob(
-                        $"{folderKey}/result.txt", 
-                        new MemoryStream(textBytes), 
-                        Constants.PlainText, 
+                        $"{folderKey}/result.txt",
+                        new MemoryStream(textBytes),
+                        Constants.PlainText,
                         context.CancellationToken.ShutdownToken);
 
                     context.WriteLine("Generating docx file...");
-                    var wordDocument = _documentHelper.CreateWordDocument(pages.Select(p => p.Result).ToArray());
+                    var wordDocument = _documentHelper.CreateWordDocument(pages.Select(p => HocrParser.GetParagraphs(p.FormatedResult)).ToArray());
+
                     await _storage.UploadBlob(
                        $"{folderKey}/result.docx",
                        wordDocument,
@@ -223,12 +224,13 @@ namespace Cranelift.Steps
 
             if (page.Succeeded)
             {
-                var result = await RunTesseract(donePath, cancellationToken, "ckb", "ara");
+                var result = await RunTesseract(donePath, cancellationToken, "ckb");
                 page.Succeeded = result.Success;
 
                 if (page.Succeeded)
                 {
                     page.Result = result.TextOutput;
+                    page.FormatedResult = result.HocrOutput;
                     page.PdfResult = result.PdfOutput;
                     // page.FormatedResult
                     page.Succeeded = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
@@ -271,12 +273,13 @@ namespace Cranelift.Steps
         {
             public bool Success { get; set; }
             public string TextOutput { get; set; }
+            public string HocrOutput { get; set; }
             public byte[] PdfOutput { get; internal set; }
         }
 
         private async Task<TesseractResult> RunTesseract(
-            string imageFile, 
-            System.Threading.CancellationToken cancellationToken, 
+            string imageFile,
+            System.Threading.CancellationToken cancellationToken,
             params string[] languages)
         {
             var tempOutputDir = Path.GetTempFileName().Replace(".tmp", "");
@@ -304,9 +307,8 @@ namespace Cranelift.Steps
                 var scriptPath = Path.Combine(workingDir, "src/tess.py");
 
                 var langs = string.Join("+", languages);
-                var result = await _pythonHelper.Run(
-                    new[] { scriptPath, imageFile, tempOutputDir, "--langs", langs },
-                    options =>
+
+                var command = Command.Run("tesseract.exe", new[] { $"-l {langs} {imageFile} {Path.Combine(tempOutputDir, "result")} txt hocr pdf" }, options =>
                 {
                     options.WorkingDirectory(workingDir);
                     options.CancellationToken(cancellationToken);
@@ -315,14 +317,25 @@ namespace Cranelift.Steps
                     {
                         { "TESSDATA_PREFIX", modelsPath }
                     });
+
+                    options.StartInfo(info =>
+                    {
+                        info.Arguments = info.Arguments.Replace("\"", "");
+                    });
                 });
+
+                await command.Task;
+
+                var result = command.Result;
 
                 if (result.Success)
                 {
-                    var output = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.txt"));
+                    var txt = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.txt"));
+                    var hocr = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.hocr"));
                     return new TesseractResult
                     {
-                        TextOutput = output,
+                        TextOutput = txt,
+                        HocrOutput = hocr,
                         PdfOutput = await File.ReadAllBytesAsync(Path.Combine(tempOutputDir, "result.pdf")),
                         Success = true
                     };

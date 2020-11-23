@@ -1,8 +1,11 @@
-﻿using DocumentFormat.OpenXml.Packaging;
+﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 
 using UglyToad.PdfPig.Writer;
 
@@ -10,13 +13,13 @@ namespace Cranelift.Helpers
 {
     public class DocumentHelper
     {
-        public Stream CreateWordDocument(string[] pages)
+        public Stream CreateWordDocument(IEnumerable<IEnumerable<HocrParagraph>> pages)
         {
             var stream = new MemoryStream();
 
             using (WordprocessingDocument wordDocument =
                 WordprocessingDocument.Create(stream,
-                DocumentFormat.OpenXml.WordprocessingDocumentType.Document,
+                WordprocessingDocumentType.Document,
                 autoSave: true))
             {
                 var mainPart = wordDocument.AddMainDocumentPart();
@@ -30,30 +33,84 @@ namespace Cranelift.Helpers
 
                 foreach (var page in pages)
                 {
-                    var lines = page.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
-
-                    foreach (var line in lines)
+                    foreach (var p in page)
                     {
-                        var isRtlText = CharHelper.StartsWithRtlCharacter(line);
-
                         var paragraph = new Paragraph();
-                        var r = new Run();
-                        var text = new Text(line);
-
-                        if (isRtlText)
+                        if (p.Direction == TextDirection.RightToLeft)
                         {
                             paragraph.ParagraphProperties = new ParagraphProperties
                             {
                                 BiDi = new BiDi(),
-                                TextDirection = new TextDirection()
+                                TextDirection = new DocumentFormat.OpenXml.Wordprocessing.TextDirection()
                                 {
                                     Val = TextDirectionValues.TopToBottomRightToLeft
                                 }
                             };
                         }
 
-                        r.Append(text);
-                        paragraph.Append(r);
+                        var fontSize = p.Lines.SelectMany(l => l.Words).GroupBy(w => w.FontSize)
+                                         .Where(w => w.Key != null)
+                                         .OrderByDescending(g => g.Count())
+                                         .ThenBy(g => g.Key)
+                                         .Select(g => g.Key)
+                                         .FirstOrDefault();
+
+                        if (fontSize <= 14)
+                            fontSize = 12;
+                        else if (fontSize < 20)
+                            fontSize = 16;
+                        else if (fontSize < 26)
+                            fontSize = 24;
+                        else if (fontSize < 30)
+                            fontSize = 26;
+                        else if (fontSize < 40)
+                            fontSize = 36;
+                        else if (fontSize < 50)
+                            fontSize = 48;
+
+                        // NOTE: Run.RunProperties.FontSize's unit is Half-Point!
+                        fontSize *= 2;
+
+                        foreach (var line in p.Lines)
+                        {
+                            int count = 0;
+                            foreach (var word in line.Words)
+                            {
+                                var r = new Run();
+                                r.RunProperties = new RunProperties();
+
+                                if (word.FontSize != null)
+                                {
+                                    var value = fontSize.ToString();
+
+                                    r.RunProperties.FontSizeComplexScript = new FontSizeComplexScript { Val = value };
+                                    r.RunProperties.FontSize = new FontSize { Val = value };
+                                }
+
+                                r.RunProperties.RunFonts = new RunFonts();
+                                r.RunProperties.RunFonts.ComplexScript = "Calibri";
+                                r.RunProperties.RunFonts.HighAnsi = r.RunProperties.RunFonts.Ascii = "Calibri";
+
+                                // Highlight low confidence words!
+                                if (word.Confidence != null && word.Confidence < 0.5)
+                                {
+                                    r.RunProperties.Highlight = new Highlight
+                                    {
+                                        Val = HighlightColorValues.Yellow
+                                    };
+                                }
+                                if (count++ < line.Words.Count - 1)
+                                {
+                                    word.Text += " ";
+                                }
+                                // TODO: Normalize text!
+                                var text = new Text(word.Text) { Space = SpaceProcessingModeValues.Preserve };
+                                r.Append(text);
+
+                                paragraph.Append(r);
+                            }
+                        }
+
                         body.Append(paragraph);
                     }
 
