@@ -160,14 +160,6 @@ namespace Cranelift.Steps
                 {
                     var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
 
-                    context.WriteLine("Generating pdf file...");
-                    var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
-                    await _storage.UploadBlob(
-                        $"{folderKey}/result.pdf",
-                        new MemoryStream(pdfBytes),
-                        Constants.Pdf,
-                        context.CancellationToken.ShutdownToken);
-
                     context.WriteLine("Generating text file...");
                     var text = string.Join("\n\n\n", pages.Select(p => p.Result));
                     var textBytes = Encoding.UTF8.GetBytes(text);
@@ -177,8 +169,18 @@ namespace Cranelift.Steps
                         Constants.PlainText,
                         context.CancellationToken.ShutdownToken);
 
+                    context.WriteLine("Generating hocr file...");
+                    var hocr = string.Join("\n\n\n", pages.Select(p => p.HocrResult));
+                    var hocrBytes = Encoding.UTF8.GetBytes(hocr);
+                    await _storage.UploadBlob(
+                        $"{folderKey}/result.hocrlist",
+                        new MemoryStream(hocrBytes),
+                        Constants.PlainText,
+                        context.CancellationToken.ShutdownToken);
+
                     context.WriteLine("Generating docx file...");
-                    var wordDocument = _documentHelper.CreateWordDocument(pages.Select(p => HocrParser.GetParagraphs(p.FormatedResult)).ToArray());
+                    var paragraphs = pages.Select(p => HocrParser.GetParagraphs(p.HocrResult)).ToArray();
+                    var wordDocument = _documentHelper.CreateWordDocument(paragraphs, job.PredictSizes);
 
                     await _storage.UploadBlob(
                        $"{folderKey}/result.docx",
@@ -220,7 +222,18 @@ namespace Cranelift.Steps
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
 
-            page.Succeeded = await Clean(page.FullPath, donePath, cancellationToken);
+            if (job.ShouldClean)
+            {
+                page.Succeeded = await Clean(page.FullPath, donePath, cancellationToken);
+                job.PredictSizes = false;
+            }
+            else
+            {
+                var directory = Path.GetDirectoryName(donePath);
+                Directory.CreateDirectory(directory);
+                File.Copy(page.FullPath, donePath, true);
+                page.Succeeded = true;
+            }
 
             if (page.Succeeded)
             {
@@ -230,8 +243,7 @@ namespace Cranelift.Steps
                 if (page.Succeeded)
                 {
                     page.Result = result.TextOutput;
-                    page.FormatedResult = result.HocrOutput;
-                    page.PdfResult = result.PdfOutput;
+                    page.HocrResult = result.HocrOutput;
                     // page.FormatedResult
                     page.Succeeded = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
                 }
@@ -274,7 +286,6 @@ namespace Cranelift.Steps
             public bool Success { get; set; }
             public string TextOutput { get; set; }
             public string HocrOutput { get; set; }
-            public byte[] PdfOutput { get; internal set; }
         }
 
         private async Task<TesseractResult> RunTesseract(
@@ -308,7 +319,7 @@ namespace Cranelift.Steps
 
                 var langs = string.Join("+", languages);
 
-                var command = Command.Run("tesseract.exe", new[] { $"-l {langs} {imageFile} {Path.Combine(tempOutputDir, "result")} txt hocr pdf" }, options =>
+                var command = Command.Run("tesseract.exe", new[] { $"-l {langs} {imageFile} {Path.Combine(tempOutputDir, "result")} txt hocr" }, options =>
                 {
                     options.WorkingDirectory(workingDir);
                     options.CancellationToken(cancellationToken);
@@ -336,7 +347,6 @@ namespace Cranelift.Steps
                     {
                         TextOutput = txt,
                         HocrOutput = hocr,
-                        PdfOutput = await File.ReadAllBytesAsync(Path.Combine(tempOutputDir, "result.pdf")),
                         Success = true
                     };
                 }

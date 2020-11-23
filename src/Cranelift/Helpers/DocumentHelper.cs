@@ -13,7 +13,7 @@ namespace Cranelift.Helpers
 {
     public class DocumentHelper
     {
-        public Stream CreateWordDocument(IEnumerable<IEnumerable<HocrParagraph>> pages)
+        public Stream CreateWordDocument(IEnumerable<IEnumerable<HocrParagraph>> pages, bool predictSizes)
         {
             var stream = new MemoryStream();
 
@@ -55,18 +55,16 @@ namespace Cranelift.Helpers
                                          .Select(g => g.Key)
                                          .FirstOrDefault();
 
-                        if (fontSize <= 14)
+                        if (fontSize < 20)
                             fontSize = 12;
-                        else if (fontSize < 20)
-                            fontSize = 16;
-                        else if (fontSize < 26)
-                            fontSize = 24;
                         else if (fontSize < 30)
-                            fontSize = 26;
+                            fontSize = 24;
                         else if (fontSize < 40)
-                            fontSize = 36;
+                            fontSize = 34;
                         else if (fontSize < 50)
-                            fontSize = 48;
+                            fontSize = 44;
+                        else if (fontSize < 60)
+                            fontSize = 54;
 
                         // NOTE: Run.RunProperties.FontSize's unit is Half-Point!
                         fontSize *= 2;
@@ -79,7 +77,7 @@ namespace Cranelift.Helpers
                                 var r = new Run();
                                 r.RunProperties = new RunProperties();
 
-                                if (word.FontSize != null)
+                                if (word.FontSize != null && predictSizes)
                                 {
                                     var value = fontSize.ToString();
 

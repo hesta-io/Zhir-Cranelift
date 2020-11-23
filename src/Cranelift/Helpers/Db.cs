@@ -87,8 +87,8 @@ from `user` u";
         public static async Task InsertPageAsync(this DbConnection connection, Page page)
         {
             var sql = $@"INSERT INTO page
-(id, name, user_id, job_id, started_processing_at, processed, finished_processing_at, succeeded, `result`, formated_result, deleted, created_at, created_by)
-VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succeeded, @result, @formatedResult, @deleted, @createdAt, @createdBy);
+(id, name, user_id, job_id, started_processing_at, processed, finished_processing_at, succeeded, `result`, deleted, created_at, created_by)
+VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succeeded, @result, @deleted, @createdAt, @createdBy);
 ";
 
             using var command = connection.CreateCommand();
@@ -99,7 +99,6 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             command.AddParameterWithValue("userId", page.UserId);
             command.AddParameterWithValue("jobId", page.JobId);
             command.AddParameterWithValue("result", page.Result);
-            command.AddParameterWithValue("formatedResult", page.FormatedResult);
             command.AddParameterWithValue("processed", page.Processed);
             command.AddParameterWithValue("succeeded", page.Succeeded);
             command.AddParameterWithValue("startedAt", page.StartedProcessingAt);

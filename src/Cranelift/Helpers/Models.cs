@@ -71,6 +71,8 @@ namespace Cranelift.Helpers
         public bool? Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
+        public bool ShouldClean { get; set; }
+        public bool PredictSizes { get; set; } = true;
 
         public bool HasFinished()
         {
@@ -89,11 +91,10 @@ namespace Cranelift.Helpers
         public bool Succeeded { get; set; }
         public bool Processed { get; set; }
         public string Result { get; set; }
-        public string FormatedResult { get; set; }
         public bool Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
         public string FullPath { get; set; }
-        public byte[] PdfResult { get; internal set; }
+        public string HocrResult { get; set; }
     }
 }
