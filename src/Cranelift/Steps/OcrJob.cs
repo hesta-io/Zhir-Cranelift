@@ -179,8 +179,8 @@ namespace Cranelift.Steps
                         context.CancellationToken.ShutdownToken);
 
                     context.WriteLine("Generating docx file...");
-                    var paragraphs = pages.Select(p => HocrParser.GetParagraphs(p.HocrResult)).ToArray();
-                    var wordDocument = _documentHelper.CreateWordDocument(paragraphs, job.PredictSizes);
+                    var paragraphs = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
+                    var wordDocument = _documentHelper.CreateWordDocument(paragraphs);
 
                     await _storage.UploadBlob(
                        $"{folderKey}/result.docx",
@@ -213,6 +213,11 @@ namespace Cranelift.Steps
                 await connection.UpdateJobAsync(job);
 
                 await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
+
+                // Clean up temp folder
+                Directory.Delete(Path.Combine(originalPath, Constants.Original, job.UserId.ToString(), job.Id), recursive: true);
+                Directory.Delete(Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id), recursive: true);
+
                 context.WriteLine("Done :)");
             }
         }
@@ -222,18 +227,9 @@ namespace Cranelift.Steps
             var doneKey = $"{Constants.Done}/{job.UserId}/{job.Id}/{page.Name}";
             var donePath = Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id, page.Name);
 
-            if (job.ShouldClean)
-            {
-                page.Succeeded = await Clean(page.FullPath, donePath, cancellationToken);
-                job.PredictSizes = false;
-            }
-            else
-            {
-                var directory = Path.GetDirectoryName(donePath);
-                Directory.CreateDirectory(directory);
-                File.Copy(page.FullPath, donePath, true);
-                page.Succeeded = true;
-            }
+            var cleanResult = await Clean(page.FullPath, donePath, cancellationToken);
+            page.Succeeded = cleanResult.Successful;
+            page.PredictSizes = !cleanResult.Cleaned;
 
             if (page.Succeeded)
             {
@@ -258,7 +254,14 @@ namespace Cranelift.Steps
             return page;
         }
 
-        private async Task<bool> Clean(string input, string output, System.Threading.CancellationToken cancellationToken)
+        private class CleanResult
+        {
+            public bool Successful { get; set; }
+            public bool Cleaned { get; set; }
+            public string Output { get; set; }
+        }
+
+        private async Task<CleanResult> Clean(string input, string output, System.Threading.CancellationToken cancellationToken)
         {
             var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");
             var scriptPath = Path.Combine(workingDir, "src/clean.py");
@@ -271,7 +274,12 @@ namespace Cranelift.Steps
                 options.WorkingDirectory(workingDir);
             });
 
-            return result.Success;
+            return new CleanResult
+            {
+                Successful = result.Success,
+                Cleaned = result.StandardOutput.Contains("CLEANED"),
+                Output = result.StandardOutput + result.StandardError,
+            };
         }
 
         private static bool IsImage(string path)

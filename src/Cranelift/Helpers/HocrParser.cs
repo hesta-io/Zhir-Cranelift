@@ -20,6 +20,12 @@ namespace Cranelift.Helpers
         public HocrRect? BoundingBox { get; set; }
     }
 
+    public class HocrPage
+    {
+        public List<HocrParagraph> Paragraphs { get; set; }
+        public bool ShouldPredictSizes { get; set; }
+    }
+
     public class HocrLine
     {
         public HocrRect? BoundingBox { get; set; }
@@ -77,7 +83,7 @@ namespace Cranelift.Helpers
             return XName.Get(element, "http://www.w3.org/1999/xhtml");
         }
 
-        public static IEnumerable<HocrParagraph> GetParagraphs(string hocr)
+        public static HocrPage Parse(string hocr, bool predictSizes)
         {
             var document = XDocument.Parse(hocr);
             var descs = document.Root.Descendants().ToArray();
@@ -88,9 +94,13 @@ namespace Cranelift.Helpers
 
             var paragraphs = areas.SelectMany(a => a.Descendants(Name("p")).Where(e => e.GetClass() == "ocr_par"))
                                   .Select(p => ParseParagraph(p))
-                                  .ToArray();
+                                  .ToList();
 
-            return paragraphs;
+            return new HocrPage
+            {
+                Paragraphs = paragraphs,
+                ShouldPredictSizes = predictSizes
+            };
         }
 
         private static HocrParagraph ParseParagraph(XElement p)

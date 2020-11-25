@@ -5,7 +5,6 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 using UglyToad.PdfPig.Writer;
 
@@ -13,7 +12,7 @@ namespace Cranelift.Helpers
 {
     public class DocumentHelper
     {
-        public Stream CreateWordDocument(IEnumerable<IEnumerable<HocrParagraph>> pages, bool predictSizes)
+        public Stream CreateWordDocument(IEnumerable<HocrPage> pages)
         {
             var stream = new MemoryStream();
 
@@ -33,7 +32,7 @@ namespace Cranelift.Helpers
 
                 foreach (var page in pages)
                 {
-                    foreach (var p in page)
+                    foreach (var p in page.Paragraphs)
                     {
                         var paragraph = new Paragraph();
                         if (p.Direction == TextDirection.RightToLeft)
@@ -77,7 +76,7 @@ namespace Cranelift.Helpers
                                 var r = new Run();
                                 r.RunProperties = new RunProperties();
 
-                                if (word.FontSize != null && predictSizes)
+                                if (word.FontSize != null && page.ShouldPredictSizes)
                                 {
                                     var value = fontSize.ToString();
 

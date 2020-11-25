@@ -7,9 +7,11 @@ from skimage.transform import probabilistic_hough_line, rotate
 from skimage import io
 from skimage import filters
 from skimage import transform
+from skimage import exposure
 import argparse
 import numpy as np
-
+import shutil
+import os
 
 def deskew(image):
     # threshold to get rid of extraneous noise
@@ -43,7 +45,25 @@ def deskew(image):
         rotation_number = 90 - abs(rotation_number)
     return rotation_number
 
-
+# below function will check if the input image is a screenshot or not 
+# by looking at histogram spikes if there exisit more than 2 spikes that are 
+# 1/2 of the max spike this will be considered a reguller image and should be 
+# pre processed what this means is that the image contains shadows and color variations 
+# as we convert to grayscale color variation will minimize and shadow effects will remain 
+# so this method is some kind of accurate and very fast to compute
+# we may increase the accuracy by smoothing the histogram(1-D array) but we need actual data 
+# and if the current method did not help we will start the smoothing the histogram
+def isScreenshot(image):
+    hist = exposure.histogram(image)
+    histUnit = hist[0]
+    maxValue = np.max(histUnit)
+    spikesFilter = histUnit >= (maxValue/2)
+    spikes = histUnit[spikesFilter]
+    if( len(spikes) > 3):
+        return False
+    else: 
+        return True
+    
 parser = argparse.ArgumentParser(
     description="Pre-processes an image and prepares it for OCR.")
 
@@ -58,15 +78,23 @@ args = parser.parse_args()
 # Read source image
 img = io.imread(args.source, as_gray=True)
 
-# Binarize input image and apply local theresould
-adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2)
-binarizedImage = img >= adaptiveThresh
+if isScreenshot(img) : 
+    os.makedirs(os.path.dirname(args.dest), exist_ok=True)
+    shutil.copy(args.source, args.dest)
 
-# Fix document skew
-rotationAngle = deskew(binarizedImage)
-fixedImage = transform.rotate(
-    binarizedImage, rotationAngle, cval=1, mode="constant"
-)
+    print("DID NOT CLEAN")
+else :
+    # Binarize input image and apply local theresould
+    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2)
 
-# Save result
-io.imsave(args.dest, fixedImage)
+    binarizedImage = img >= adaptiveThresh
+
+    # Fix document skew
+    rotationAngle = deskew(binarizedImage)
+    fixedImage = transform.rotate(
+        binarizedImage, rotationAngle, cval=1, mode="constant"
+    )
+
+    # Save result
+    io.imsave(args.dest, fixedImage)
+    print("CLEANED")
