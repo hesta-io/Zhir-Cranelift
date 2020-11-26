@@ -48,7 +48,7 @@ namespace Cranelift
             // Add the processing server as IHostedService
             services.AddHangfireServer(options =>
             {
-                options.WorkerCount = 1;
+                options.WorkerCount = workerOptions.WorkerCount;
             });
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

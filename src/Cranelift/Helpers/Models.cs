@@ -96,5 +96,6 @@ namespace Cranelift.Helpers
         public string HocrResult { get; set; }
 
         public bool PredictSizes { get; set; }
+        public byte[] PdfResult { get; set; }
     }
 }

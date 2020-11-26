@@ -160,6 +160,14 @@ namespace Cranelift.Steps
                 {
                     var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
 
+                    context.WriteLine("Generating pdf file...");
+                    var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
+                    await _storage.UploadBlob(
+                        $"{folderKey}/result.pdf",
+                        new MemoryStream(pdfBytes),
+                        Constants.Pdf,
+                        context.CancellationToken.ShutdownToken);
+
                     context.WriteLine("Generating text file...");
                     var text = string.Join("\n\n\n", pages.Select(p => p.Result));
                     var textBytes = Encoding.UTF8.GetBytes(text);
@@ -240,6 +248,7 @@ namespace Cranelift.Steps
                 {
                     page.Result = result.TextOutput;
                     page.HocrResult = result.HocrOutput;
+                    page.PdfResult = result.PdfOutput;
                     // page.FormatedResult
                     page.Succeeded = await _storage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
                 }
@@ -294,6 +303,7 @@ namespace Cranelift.Steps
             public bool Success { get; set; }
             public string TextOutput { get; set; }
             public string HocrOutput { get; set; }
+            public byte[] PdfOutput { get; set; }
         }
 
         private async Task<TesseractResult> RunTesseract(
@@ -327,7 +337,7 @@ namespace Cranelift.Steps
 
                 var langs = string.Join("+", languages);
 
-                var command = Command.Run("tesseract.exe", new[] { $"-l {langs} {imageFile} {Path.Combine(tempOutputDir, "result")} txt hocr" }, options =>
+                var command = Command.Run("tesseract", new[] { $"-l {langs} {imageFile} {Path.Combine(tempOutputDir, "result")} txt hocr pdf" }, options =>
                 {
                     options.WorkingDirectory(workingDir);
                     options.CancellationToken(cancellationToken);
@@ -351,10 +361,13 @@ namespace Cranelift.Steps
                 {
                     var txt = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.txt"));
                     var hocr = await File.ReadAllTextAsync(Path.Combine(tempOutputDir, "result.hocr"));
+                    var pdf = await File.ReadAllBytesAsync(Path.Combine(tempOutputDir, "result.pdf"));
+
                     return new TesseractResult
                     {
                         TextOutput = txt,
                         HocrOutput = hocr,
+                        PdfOutput = pdf,
                         Success = true
                     };
                 }
