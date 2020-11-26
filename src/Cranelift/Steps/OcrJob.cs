@@ -237,7 +237,7 @@ namespace Cranelift.Steps
 
             var cleanResult = await Clean(page.FullPath, donePath, cancellationToken);
             page.Succeeded = cleanResult.Successful;
-            page.PredictSizes = !cleanResult.Cleaned;
+            page.PredictSizes = false; // !cleanResult.Cleaned;
 
             if (page.Succeeded)
             {

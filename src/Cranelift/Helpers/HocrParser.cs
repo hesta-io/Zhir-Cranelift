@@ -18,6 +18,8 @@ namespace Cranelift.Helpers
         public List<HocrLine> Lines { get; set; }
         public TextDirection Direction { get; set; }
         public HocrRect? BoundingBox { get; set; }
+
+        public override string ToString() => string.Join("\n", Lines);
     }
 
     public class HocrPage
@@ -30,6 +32,8 @@ namespace Cranelift.Helpers
     {
         public HocrRect? BoundingBox { get; set; }
         public List<HocrWord> Words { get; set; }
+
+        public override string ToString() => string.Join(" ", Words);
     }
 
     public struct HocrPoint
@@ -58,12 +62,15 @@ namespace Cranelift.Helpers
 
     // https://en.wikipedia.org/wiki/HOCR
     // https://stackoverflow.com/a/49283965/7003797
+    // https://github.com/kba/hocr-spec/blob/master/1.1/spec.md
     public class HocrWord
     {
         public string Text { get; set; }
         public double? FontSize { get; set; }
         public double? Confidence { get; set; }
         public HocrRect? BoundingBox { get; set; }
+
+        public override string ToString() => Text;
     }
 
     public static class HocrParser
@@ -114,13 +121,13 @@ namespace Cranelift.Helpers
 
             paragraph.Lines = new List<HocrLine>();
 
-            foreach (var l in p.Descendants(Name("span")).Where(p => p.GetClass() == "ocr_line"))
+            foreach (var l in p.Descendants(Name("span")))
             {
                 var line = new HocrLine();
                 line.BoundingBox = ParseBoundingBox(ParseTitle(p.GetTitle()));
                 line.Words = new List<HocrWord>();
 
-                foreach (var w in l.Descendants(Name("span")).Where(p => p.GetClass() == "ocrx_word"))
+                foreach (var w in l.Descendants(Name("span")))
                 {
                     var word = new HocrWord();
                     var title = w.GetTitle();
@@ -129,9 +136,6 @@ namespace Cranelift.Helpers
 
                     word.BoundingBox = ParseBoundingBox(properties);
                     word.Confidence = ParseNumber(properties, "x_wconf");
-                    if (word.Confidence != null)
-                        word.Confidence = word.Confidence / 100; // 0 - 1
-
                     word.FontSize = ParseNumber(properties, "x_fsize");
                     word.Text = w.Value;
 
