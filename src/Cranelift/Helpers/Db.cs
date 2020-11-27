@@ -114,6 +114,9 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
         
         public static async Task InsertTransactionAsync(this DbConnection connection, UserTransaction transaction)
         {
+            transaction.UserNote = transaction.UserNote ?? "";
+            transaction.AdminNote = transaction.AdminNote ?? "";
+
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
 (user_id, type_id, payment_medium_id, amount, user_note, admin_note, created_at, created_by)
