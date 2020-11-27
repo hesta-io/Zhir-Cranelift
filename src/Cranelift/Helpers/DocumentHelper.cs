@@ -68,6 +68,7 @@ namespace Cranelift.Helpers
                         // NOTE: Run.RunProperties.FontSize's unit is Half-Point!
                         fontSize *= 2;
 
+                        var lastLine = p.Lines[p.Lines.Count - 1];
                         foreach (var line in p.Lines)
                         {
                             int count = 0;
@@ -96,7 +97,7 @@ namespace Cranelift.Helpers
                                         Val = HighlightColorValues.Yellow
                                     };
                                 }
-                                if (count++ < line.Words.Count - 1)
+                                if (line != lastLine || count++ < line.Words.Count - 1)
                                 {
                                     word.Text += " ";
                                 }

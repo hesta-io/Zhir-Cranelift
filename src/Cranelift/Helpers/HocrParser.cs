@@ -97,11 +97,11 @@ namespace Cranelift.Helpers
             var page = document.Root.Descendants(Name("div")).FirstOrDefault(e => e.GetClass() == "ocr_page");
             if (page is null) return null;
 
-            var areas = page.Descendants(Name("div")).Where(d => d.GetClass() == "ocr_carea").ToArray();
-
-            var paragraphs = areas.SelectMany(a => a.Descendants(Name("p")).Where(e => e.GetClass() == "ocr_par"))
-                                  .Select(p => ParseParagraph(p))
-                                  .ToList();
+            var paragraphs = page.Elements(Name("div")) // ocr_carea
+                             .SelectMany(a => a.Elements(Name("p"))) // ocr_par
+                             .Select(p => ParseParagraph(p))
+                             .Where(p => !string.IsNullOrWhiteSpace(p.ToString()))
+                             .ToList();
 
             return new HocrPage
             {
@@ -121,13 +121,13 @@ namespace Cranelift.Helpers
 
             paragraph.Lines = new List<HocrLine>();
 
-            foreach (var l in p.Descendants(Name("span")))
+            foreach (var l in p.Elements(Name("span"))) // ocr_line or ocr_caption
             {
                 var line = new HocrLine();
                 line.BoundingBox = ParseBoundingBox(ParseTitle(p.GetTitle()));
                 line.Words = new List<HocrWord>();
 
-                foreach (var w in l.Descendants(Name("span")))
+                foreach (var w in l.Descendants(Name("span"))) // ocrx_word
                 {
                     var word = new HocrWord();
                     var title = w.GetTitle();
