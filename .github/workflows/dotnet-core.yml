@@ -38,7 +38,7 @@ jobs:
         host: ${{ secrets.ftp_server_host }}
         username: ${{ secrets.ftp_username }}
         password: ${{ secrets.ftp_password }}
-        port: ${{ secrets.ftp_port }}
+        port: 22
         source: 'src/Cranelift/bin/x64/Release/netcoreapp3.1/linux-x64/publish'
         target: '/home/www/cranelift'
         rm: false
