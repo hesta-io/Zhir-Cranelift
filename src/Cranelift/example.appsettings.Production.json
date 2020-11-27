@@ -18,5 +18,15 @@
     "AccessKey": "***",
     "Secret": "***",
     "BucketName": "***"
+  },
+  "Sentry": {
+    "Dsn": "https://*****.ingest.sentry.io/*****",
+    "IncludeRequestPayload": true,
+    "SendDefaultPii": true,
+    "MinimumBreadcrumbLevel": "Debug",
+    "MinimumEventLevel": "Warning",
+    "AttachStackTrace": true,
+    "Debug": false,
+    "DiagnosticsLevel": "Error"
   }
 }

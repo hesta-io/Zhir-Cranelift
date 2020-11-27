@@ -84,8 +84,6 @@ namespace Cranelift.Steps
 
                     context.CancellationToken.ThrowIfCancellationRequested();
 
-                    throw new ArgumentException();
-
                     // Step 2: Download images
                     var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
                     var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
@@ -129,7 +127,7 @@ namespace Cranelift.Steps
 
                         foreach (var task in tasks.Where(t => t.Result.Succeeded == false))
                         {
-                            context.WriteLine($"Failed to process page: {task.Result.Name}. Output:\n{task.Result.Result}");
+                            throw new InvalidOperationException($"Failed to process page: {task.Result.Name}. Output:\n{task.Result.Result}");
                         }
 
                         if (tasks.Any(t => t.Result.Succeeded == false))
@@ -269,6 +267,10 @@ namespace Cranelift.Steps
                 {
                     page.Result = result.TextOutput;
                 }
+            }
+            else
+            {
+                page.Result = cleanResult.Output;
             }
 
             page.FinishedProcessingAt = DateTime.UtcNow;

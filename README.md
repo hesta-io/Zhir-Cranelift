@@ -30,6 +30,16 @@ The background job processing controller for ZhirOCR.
     "AccessKey": "***",
     "Secret": "***",
     "BucketName": "zhir-ocr"
+  },
+  "Sentry": {
+    "Dsn": "https://*****.ingest.sentry.io/*****",
+    "IncludeRequestPayload": true,
+    "SendDefaultPii": true,
+    "MinimumBreadcrumbLevel": "Debug",
+    "MinimumEventLevel": "Warning",
+    "AttachStackTrace": true,
+    "Debug": false,
+    "DiagnosticsLevel": "Error"
   }
 }
 ```
