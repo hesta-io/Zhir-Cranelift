@@ -86,7 +86,7 @@ if isScreenshot(img):
     print("DID NOT CLEAN")
 else:
     # Binarize input image and apply local theresould
-    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.1)
+    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2, window_size=11)
 
     binarizedImage = img >= adaptiveThresh
 
