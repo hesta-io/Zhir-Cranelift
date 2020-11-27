@@ -37,6 +37,8 @@ namespace Cranelift.Helpers
         public decimal Amount { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
+        public string UserNote { get; set; }
+        public string AdminNote { get; set; }
     }
 
     public class User

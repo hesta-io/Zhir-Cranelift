@@ -36,13 +36,15 @@ namespace Cranelift.Helpers
         {
             public decimal Amount { get; set; }
             public string PaymentMethod { get; set; }
+            public string UserNote { get; set; }
+            public string AdminNote { get; set; }
             public string Type { get; set; }
             public DateTime Date { get; set; }
         }
 
         public static async Task<IEnumerable<TranactionViewModel>> GetTransactions(this DbConnection connection, int userId)
         {
-            var sql = $@"select ut.amount, pm.name as PaymentMethod, tt.name as Type, ut.created_at as Date from user_transaction ut
+            var sql = $@"select ut.amount, pm.name as PaymentMethod, tt.name as Type, ut.created_at as Date, ut.user_note, ut.admin_note from user_transaction ut
 left join payment_medium pm on pm.id = ut.payment_medium_id 
 left join transaction_type tt on tt.id = ut.type_id
 where ut.user_id = {userId}
@@ -114,11 +116,13 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
         {
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
-(user_id, type_id, payment_medium_id, amount, created_at, created_by)
-VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @createdAt, '{transaction.CreatedBy}');
+(user_id, type_id, payment_medium_id, amount, user_note, admin_note, created_at, created_by)
+VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @userNote, @adminNote, @createdAt, '{transaction.CreatedBy}');
 ";
 
             command.AddParameterWithValue("createdAt", transaction.CreatedAt);
+            command.AddParameterWithValue("userNote", transaction.UserNote);
+            command.AddParameterWithValue("adminNote", transaction.AdminNote);
 
             await command.ExecuteNonQueryAsync();
         }

@@ -32,6 +32,12 @@ namespace Cranelift.Pages.Users
         public int PaymentMedium { get; set; }
 
         [BindProperty]
+        public string UserNote { get; set; }
+
+        [BindProperty]
+        public string AdminNote { get; set; }
+
+        [BindProperty]
         public decimal Amount { get; set; }
 
         public User Data { get; set; }
@@ -75,7 +81,9 @@ namespace Cranelift.Pages.Users
                     CreatedAt = DateTime.UtcNow,
                     PaymentMediumId = PaymentMedium,
                     TypeId = UserTransaction.Types.Recharge,
-                    UserId = Id
+                    UserId = Id,
+                    UserNote = UserNote,
+                    AdminNote = AdminNote
                 };
 
                 var connection = await _dbContext.OpenOcrConnectionAsync();
