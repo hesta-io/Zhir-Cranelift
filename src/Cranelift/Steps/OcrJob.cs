@@ -8,21 +8,14 @@ using Medallion.Shell;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-
-using MySql.Data.MySqlClient;
-
-using Renci.SshNet.Common;
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using System.Transactions;
 
 namespace Cranelift.Steps
 {
@@ -64,169 +57,189 @@ namespace Cranelift.Steps
         }
 
         [JobDisplayName("OCR Job ({0})")]
+        [AutomaticRetry(Attempts = 0)]
         public async Task ExecuteOcrJob(string jobId, PerformContext context)
         {
-            context.WriteLine($"Processing {jobId}");
-
-            using (var connection = await _dbContext.OpenOcrConnectionAsync())
-            using (var transaction = await connection.BeginTransactionAsync(
-                context.CancellationToken.ShutdownToken))
+            try
             {
-                // Step 1: Make sure the job is not processed
-                var job = await connection.GetJobAsync(jobId);
-                if (job.HasFinished())
+                context.WriteLine($"Processing {jobId}");
+
+                using (var connection = await _dbContext.OpenOcrConnectionAsync())
+                using (var transaction = await connection.BeginTransactionAsync(
+                    context.CancellationToken.ShutdownToken))
                 {
-                    context.WriteLine($"This job is already processed.");
-                    return;
-                }
-
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                job.Status = ModelConstants.Processing;
-                job.ProcessedAt = DateTime.UtcNow;
-                await connection.UpdateJobAsync(job);
-
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                // Step 2: Download images
-                var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
-                var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
-
-                await _storage.DownloadBlobs(originalPrefix, originalPath, context.CancellationToken.ShutdownToken);
-
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                // TODO: Make sure user has enough balance!
-
-                var pages = Directory.EnumerateFiles(Path.Combine(originalPath, originalPrefix))
-                                      .Where(i => IsImage(i))
-                                      .Select(i => new Page
-                                      {
-                                          FullPath = i,
-                                          Id = Guid.NewGuid().ToString("N"),
-                                          Name = Path.GetFileName(i),
-                                          JobId = job.Id,
-                                          UserId = job.UserId,
-                                          StartedProcessingAt = DateTime.UtcNow,
-                                          Deleted = false,
-                                          CreatedAt = DateTime.UtcNow,
-                                          CreatedBy = job.UserId,
-                                      })
-                                      .ToArray();
-
-                var parallelizationDegree = _options.ParallelPagesCount;
-
-                var count = 0;
-                var chunks = pages.Chunk(parallelizationDegree).ToArray();
-
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                await connection.DeletePreviousPagesAsync(job);
-
-                // Process the pages
-                foreach (var chunk in chunks)
-                {
-                    var tasks = chunk.Select(p => ProcessPage(job, p, context.CancellationToken.ShutdownToken)).ToArray();
-                    await Task.WhenAll(tasks);
-
-                    foreach (var task in tasks.Where(t => t.Result.Succeeded == false))
+                    // Step 1: Make sure the job is not processed
+                    var job = await connection.GetJobAsync(jobId);
+                    if (job.HasFinished())
                     {
-                        context.WriteLine($"Failed to process page: {task.Result.Name}. Output:\n{task.Result.Result}");
-                    }
-
-                    if (tasks.Any(t => t.Result.Succeeded == false))
-                    {
-                        job.Status = ModelConstants.Failed;
-                        job.FailingReason = "Failed to process one or more pages.";
-                        break;
-                    }
-                    else
-                    {
-                        foreach (var page in chunk)
-                        {
-                            await connection.InsertPageAsync(page);
-                        }
-
-                        count += parallelizationDegree;
-                        context.WriteLine($"Progress: {count}/{job.PageCount}");
+                        context.WriteLine($"This job is already processed.");
+                        return;
                     }
 
                     context.CancellationToken.ThrowIfCancellationRequested();
-                }
 
-                context.CancellationToken.ThrowIfCancellationRequested();
+                    job.Status = ModelConstants.Processing;
+                    job.ProcessedAt = DateTime.UtcNow;
+                    await connection.UpdateJobAsync(job);
 
-                if (job.Status != ModelConstants.Failed)
-                {
-                    var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
+                    context.CancellationToken.ThrowIfCancellationRequested();
 
-                    context.WriteLine("Generating pdf file...");
-                    var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
-                    await _storage.UploadBlob(
-                        $"{folderKey}/result.pdf",
-                        new MemoryStream(pdfBytes),
-                        Constants.Pdf,
-                        context.CancellationToken.ShutdownToken);
+                    throw new ArgumentException();
 
-                    context.WriteLine("Generating text file...");
-                    var text = string.Join("\n\n\n", pages.Select(p => p.Result));
-                    var textBytes = Encoding.UTF8.GetBytes(text);
-                    await _storage.UploadBlob(
-                        $"{folderKey}/result.txt",
-                        new MemoryStream(textBytes),
-                        Constants.PlainText,
-                        context.CancellationToken.ShutdownToken);
+                    // Step 2: Download images
+                    var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
+                    var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
 
-                    context.WriteLine("Generating hocr file...");
-                    var hocr = string.Join("\n\n\n", pages.Select(p => p.HocrResult));
-                    var hocrBytes = Encoding.UTF8.GetBytes(hocr);
-                    await _storage.UploadBlob(
-                        $"{folderKey}/result.hocrlist",
-                        new MemoryStream(hocrBytes),
-                        Constants.PlainText,
-                        context.CancellationToken.ShutdownToken);
+                    await _storage.DownloadBlobs(originalPrefix, originalPath, context.CancellationToken.ShutdownToken);
 
-                    context.WriteLine("Generating docx file...");
-                    var paragraphs = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
-                    var wordDocument = _documentHelper.CreateWordDocument(paragraphs);
+                    context.CancellationToken.ThrowIfCancellationRequested();
 
-                    await _storage.UploadBlob(
-                       $"{folderKey}/result.docx",
-                       wordDocument,
-                       Constants.Docx,
-                       context.CancellationToken.ShutdownToken);
+                    // TODO: Make sure user has enough balance!
 
-                    // TODO: Update balance?
-                    job.Status = ModelConstants.Completed;
+                    var pages = Directory.EnumerateFiles(Path.Combine(originalPath, originalPrefix))
+                                          .Where(i => IsImage(i))
+                                          .Select(i => new Page
+                                          {
+                                              FullPath = i,
+                                              Id = Guid.NewGuid().ToString("N"),
+                                              Name = Path.GetFileName(i),
+                                              JobId = job.Id,
+                                              UserId = job.UserId,
+                                              StartedProcessingAt = DateTime.UtcNow,
+                                              Deleted = false,
+                                              CreatedAt = DateTime.UtcNow,
+                                              CreatedBy = job.UserId,
+                                          })
+                                          .ToArray();
 
-                    const int minimumNumberOfWordsPerPage = 50;
-                    var paidPages = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
+                    var parallelizationDegree = _options.ParallelPagesCount;
 
-                    context.WriteLine("Charging for the job...");
-                    await connection.InsertTransactionAsync(new UserTransaction
+                    var count = 0;
+                    var chunks = pages.Chunk(parallelizationDegree).ToArray();
+
+                    context.CancellationToken.ThrowIfCancellationRequested();
+
+                    await connection.DeletePreviousPagesAsync(job);
+
+                    // Process the pages
+                    foreach (var chunk in chunks)
                     {
-                        UserId = job.UserId,
-                        Amount = -(job.PricePerPage * paidPages) ?? 0,
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = job.UserId,
-                        PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
-                        TypeId = UserTransaction.Types.OcrJob,
-                    });
+                        var tasks = chunk.Select(p => ProcessPage(job, p, context.CancellationToken.ShutdownToken)).ToArray();
+                        await Task.WhenAll(tasks);
+
+                        foreach (var task in tasks.Where(t => t.Result.Succeeded == false))
+                        {
+                            context.WriteLine($"Failed to process page: {task.Result.Name}. Output:\n{task.Result.Result}");
+                        }
+
+                        if (tasks.Any(t => t.Result.Succeeded == false))
+                        {
+                            job.Status = ModelConstants.Failed;
+                            job.FailingReason = "Failed to process one or more pages.";
+                            break;
+                        }
+                        else
+                        {
+                            foreach (var page in chunk)
+                            {
+                                await connection.InsertPageAsync(page);
+                            }
+
+                            count += parallelizationDegree;
+                            context.WriteLine($"Progress: {count}/{job.PageCount}");
+                        }
+
+                        context.CancellationToken.ThrowIfCancellationRequested();
+                    }
+
+                    context.CancellationToken.ThrowIfCancellationRequested();
+
+                    if (job.Status != ModelConstants.Failed)
+                    {
+                        var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
+
+                        context.WriteLine("Generating pdf file...");
+                        var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
+                        await _storage.UploadBlob(
+                            $"{folderKey}/result.pdf",
+                            new MemoryStream(pdfBytes),
+                            Constants.Pdf,
+                            context.CancellationToken.ShutdownToken);
+
+                        context.WriteLine("Generating text file...");
+                        var text = string.Join("\n\n\n", pages.Select(p => p.Result));
+                        var textBytes = Encoding.UTF8.GetBytes(text);
+                        await _storage.UploadBlob(
+                            $"{folderKey}/result.txt",
+                            new MemoryStream(textBytes),
+                            Constants.PlainText,
+                            context.CancellationToken.ShutdownToken);
+
+                        context.WriteLine("Generating hocr file...");
+                        var hocr = string.Join("\n\n\n", pages.Select(p => p.HocrResult));
+                        var hocrBytes = Encoding.UTF8.GetBytes(hocr);
+                        await _storage.UploadBlob(
+                            $"{folderKey}/result.hocrlist",
+                            new MemoryStream(hocrBytes),
+                            Constants.PlainText,
+                            context.CancellationToken.ShutdownToken);
+
+                        context.WriteLine("Generating docx file...");
+                        var paragraphs = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
+                        var wordDocument = _documentHelper.CreateWordDocument(paragraphs);
+
+                        await _storage.UploadBlob(
+                           $"{folderKey}/result.docx",
+                           wordDocument,
+                           Constants.Docx,
+                           context.CancellationToken.ShutdownToken);
+
+                        // TODO: Update balance?
+                        job.Status = ModelConstants.Completed;
+
+                        const int minimumNumberOfWordsPerPage = 50;
+                        var paidPages = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
+
+                        context.WriteLine("Charging for the job...");
+                        await connection.InsertTransactionAsync(new UserTransaction
+                        {
+                            UserId = job.UserId,
+                            Amount = -(job.PricePerPage * paidPages) ?? 0,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = job.UserId,
+                            PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
+                            TypeId = UserTransaction.Types.OcrJob,
+                        });
+                    }
+
+                    context.CancellationToken.ThrowIfCancellationRequested();
+
+                    // Update job :)
+                    job.FinishedAt = DateTime.UtcNow;
+                    await connection.UpdateJobAsync(job);
+
+                    await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
+
+                    // Clean up temp folder
+                    Directory.Delete(Path.Combine(originalPath, Constants.Original, job.UserId.ToString(), job.Id), recursive: true);
+                    Directory.Delete(Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id), recursive: true);
+
+                    context.WriteLine("Done :)");
+                }
+            }
+            catch (Exception ex)
+            {
+                using (var connection = await _dbContext.OpenOcrConnectionAsync())
+                {
+                    var job = await connection.GetJobAsync(jobId);
+
+                    job.Status = ModelConstants.Failed;
+                    job.FailingReason = ex.Message;
+                    job.FinishedAt = DateTime.UtcNow;
+                    await connection.UpdateJobAsync(job);
                 }
 
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                // Update job :)
-                job.FinishedAt = DateTime.UtcNow;
-                await connection.UpdateJobAsync(job);
-
-                await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
-
-                // Clean up temp folder
-                Directory.Delete(Path.Combine(originalPath, Constants.Original, job.UserId.ToString(), job.Id), recursive: true);
-                Directory.Delete(Path.Combine(Path.GetTempPath(), Constants.Cranelift, Constants.Done, job.UserId.ToString(), job.Id), recursive: true);
-
-                context.WriteLine("Done :)");
+                throw;
             }
         }
 
