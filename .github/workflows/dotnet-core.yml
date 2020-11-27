@@ -1,0 +1,58 @@
+name: .NET Core
+ 
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+ 
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Publish
+      run: dotnet publish ./src/Cranelift/Cranelift.csproj --runtime linux-x64 --configuration Release /p:Platform=x64
+
+    - name: Stop cranelift
+      uses: Flaavius/ssh-commands@1.0
+      with:
+        command: systemctl stop cranelift
+        # Hostname or IP address of the server.
+        host: ${{ secrets.ftp_server_host }}
+        # Username for authentication.
+        username: ${{ secrets.ftp_username }}
+        # Port number of the server.
+        port: 22
+        # Password for password-based user authentication.
+        password: ${{ secrets.ftp_password }}
+
+    - name: copy file via ssh password
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.ftp_server_host }}
+        username: ${{ secrets.ftp_username }}
+        password: ${{ secrets.ftp_password }}
+        port: ${{ secrets.ftp_port }}
+        source: 'src/Cranelift/bin/x64/Release/netcoreapp3.1/linux-x64/publish'
+        target: '/home/www/cranelift'
+        rm: false
+        strip_components: 8
+
+    - name: Start Cranelift
+      uses: Flaavius/ssh-commands@1.0
+      with:
+        command: systemctl start cranelift
+        # Hostname or IP address of the server.
+        host: ${{ secrets.ftp_server_host }}
+        # Username for authentication.
+        username: ${{ secrets.ftp_username }}
+        # Port number of the server.
+        port: 22
+        # Password for password-based user authentication.
+        password: ${{ secrets.ftp_password }}
