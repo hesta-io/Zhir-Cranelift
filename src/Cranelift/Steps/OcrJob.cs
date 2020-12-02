@@ -95,6 +95,7 @@ namespace Cranelift.Steps
                     // TODO: Make sure user has enough balance!
 
                     var pages = Directory.EnumerateFiles(Path.Combine(originalPath, originalPrefix))
+                                         .OrderBy(p => GetIndex(p))
                                           .Where(i => IsImage(i))
                                           .Select(i => new Page
                                           {
@@ -239,6 +240,17 @@ namespace Cranelift.Steps
 
                 throw;
             }
+        }
+
+        private int GetIndex(string p)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(p);
+            if (int.TryParse(fileName, out var index))
+            {
+                return index;
+            }
+
+            throw new InvalidOperationException($"Invalid filename: '{p}'");
         }
 
         private async Task<Page> ProcessPage(Job job, Page page, System.Threading.CancellationToken cancellationToken)
