@@ -322,7 +322,7 @@ namespace Cranelift.Steps
         {
             var extension = Path.GetExtension(path).ToLowerInvariant();
             return extension == ".jpg" || extension == ".jpeg" ||
-                   extension == ".png";
+                   extension == ".png" || extension == ".jfif";
         }
 
         private class TesseractResult
