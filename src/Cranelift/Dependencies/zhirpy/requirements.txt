@@ -1,4 +1,5 @@
 scikit-image
+opencv-python
 pytesseract
 numpy
 PyMuPDF

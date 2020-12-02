@@ -7,6 +7,7 @@ from skimage.transform import probabilistic_hough_line, rotate
 from skimage import io
 from skimage import filters
 from skimage import transform
+
 from skimage import exposure
 import argparse
 import numpy as np
@@ -86,7 +87,8 @@ if isScreenshot(img):
     print("DID NOT CLEAN")
 else:
     # Binarize input image and apply local theresould
-    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2, window_size=11)
+    # adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2, window_size=11)
+    adaptiveThresh = filters.threshold_local(img, block_size = 11 , offset = 0.05, method = "mean")
 
     binarizedImage = img >= adaptiveThresh
 
