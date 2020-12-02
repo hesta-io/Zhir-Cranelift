@@ -321,8 +321,12 @@ namespace Cranelift.Steps
         private static bool IsImage(string path)
         {
             var extension = Path.GetExtension(path).ToLowerInvariant();
-            return extension == ".jpg" || extension == ".jpeg" ||
-                   extension == ".png" || extension == ".jfif";
+            var validExtensions = new HashSet<string>
+            {
+                ".jpg", ".jpeg", ".jfif", ".png", ".webp", ".bmp", ".tiff"
+            };
+
+            return validExtensions.Contains(extension);
         }
 
         private class TesseractResult
