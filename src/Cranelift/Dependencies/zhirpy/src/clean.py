@@ -83,14 +83,10 @@ img = io.imread(args.source, as_gray=True)
 avg = img.mean(axis=0).mean(axis=0)
 
 if avg < 0.5:
-    # Images whith black background should NOT be cleaned
-    directory = os.path.dirname(args.dest)
-    if len(directory) > 0:
-        os.makedirs(directory, exist_ok=True)
-    shutil.copy(args.source, args.dest)
+    img = util.invert(img)
 
     print("DID NOTHING")
-elif isScreenshot(img):
+if isScreenshot(img):
     io.imsave(args.dest, img)
 
     print("JUST GRAYSCALE")
