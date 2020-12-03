@@ -7,7 +7,7 @@ from skimage.transform import probabilistic_hough_line, rotate
 from skimage import io
 from skimage import filters
 from skimage import transform
-
+from skimage import util
 from skimage import exposure
 import argparse
 import numpy as np
@@ -80,14 +80,25 @@ args = parser.parse_args()
 
 # Read source image
 img = io.imread(args.source, as_gray=True)
+avg = img.mean(axis=0).mean(axis=0)
 
-if isScreenshot(img):
+if avg < 0.5:
+    # Images whith black background should NOT be cleaned
+    directory = os.path.dirname(args.dest)
+    if len(directory) > 0:
+        os.makedirs(directory, exist_ok=True)
+    shutil.copy(args.source, args.dest)
+
+    print("DID NOTHING")
+elif isScreenshot(img):
     io.imsave(args.dest, img)
 
-    print("DID NOT CLEAN")
+    print("JUST GRAYSCALE")
 else:
     # Binarize input image and apply local theresould
-    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.2, window_size=11) # this current method gives far better results
+    adaptiveThresh = filters.thresholding.threshold_sauvola(
+        img, r=0.2, window_size=11
+    )  # this current method gives far better results
     # adaptiveThresh = filters.threshold_local(img, block_size = 11 , offset = 0.05, method = "mean")
 
     binarizedImage = img >= adaptiveThresh
