@@ -95,10 +95,19 @@ namespace Cranelift.Pages.Users
                 };
 
                 var connection = await _dbContext.OpenOcrConnectionAsync();
-                await connection.InsertTransactionAsync(transaction);
+                try
+                {
+                    await connection.InsertTransactionAsync(transaction);
+                    Message = "Account was recharged successfuly.";
+                    Success = true;
+                }
+                catch (Exception ex)
+                {
+                    Message = ex.Message;
+                    Success = false;
+                }
 
-                Message = "Account was recharged successfuly.";
-                Success = true;
+
             }
 
             await Load(Id);

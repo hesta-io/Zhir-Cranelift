@@ -123,6 +123,14 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             transaction.UserNote = transaction.UserNote ?? "";
             transaction.AdminNote = transaction.AdminNote ?? "";
 
+            if (string.IsNullOrWhiteSpace(transaction.TransactionId) == false)
+            {
+                transaction.TransactionId = transaction.TransactionId.Trim();
+                var sql = $"SELECT COUNT(*) from user_transaction WHERE transaction_id = '{transaction.TransactionId}' AND payment_medium_id={transaction.PaymentMediumId} AND type_id={transaction.TypeId}";
+                var count = await connection.ExecuteScalarAsync<int>(sql);
+                if (count > 0) throw new InvalidOperationException("This Transaction has already been recharged!");
+            }
+
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
 (user_id, type_id, payment_medium_id, amount, page_count, user_note, admin_note, transaction_id, created_at, created_by)
