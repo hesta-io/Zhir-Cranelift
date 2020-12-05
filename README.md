@@ -31,6 +31,12 @@ The background job processing controller for ZhirOCR.
     "Secret": "***",
     "BucketName": "zhir-ocr"
   },
+  "FastPay": {
+  "Token": "***",
+  "Number": "+9647507665935",
+  "IntervalMinMinutes": 10,
+  "IntervalMaxMinutes": 40
+  },
   "Sentry": {
     "Dsn": "https://*****.ingest.sentry.io/*****",
     "IncludeRequestPayload": true,
