@@ -73,8 +73,16 @@
         <input asp-for="Amount" class="form-control" />
     </div>
     <div class="form-group">
+        <label asp-for="PageCount">Page Count: </label>
+        <input asp-for="PageCount" class="form-control" />
+    </div>
+    <div class="form-group">
         <label asp-for="UserNote">User Note: </label>
         <input asp-for="UserNote" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="TransactionId">Transaction Id (FastPay/AsiaHawalla): </label>
+        <input asp-for="TransactionId" class="form-control" />
     </div>
     <div class="form-group">
         <label asp-for="AdminNote">Admin Note: </label>
@@ -105,6 +113,7 @@
         <tr>
             <th scope="col">#</th>
             <th scope="col">Amount</th>
+            <th scope="col">Page Count</th>
             <th scope="col">Payment Method</th>
             <th scope="col">Type</th>
             <th scope="col">User Note</th>
@@ -120,8 +129,9 @@
 
         <tr>
             <th scope="row">@(i + 1)</th>
-            <td>@transaction.Amount.ToString("N0")</td>
-            <td>@transaction.PaymentMethod</td>
+            <td>@((transaction.Amount ?? 0).ToString("N0"))</td>
+            <td>@transaction.PageCount.ToString("N0")</td>
+            <td>@transaction.PaymentMedium</td>
             <td>@transaction.Type</td>
             <td>@transaction.UserNote</td>
             <td>@transaction.AdminNote</td>

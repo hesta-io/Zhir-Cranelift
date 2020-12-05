@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 using Cranelift.Helpers;
 
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -32,10 +31,16 @@ namespace Cranelift.Pages.Users
         public int PaymentMedium { get; set; }
 
         [BindProperty]
+        public string TransactionId { get; set; }
+
+        [BindProperty]
         public string UserNote { get; set; }
 
         [BindProperty]
         public string AdminNote { get; set; }
+
+        [BindProperty]
+        public int PageCount { get; set; }
 
         [BindProperty]
         public decimal Amount { get; set; }
@@ -55,7 +60,7 @@ namespace Cranelift.Pages.Users
         {
             using var connection = await _dbContext.OpenOcrConnectionAsync();
             Data = await connection.GetUserAsync(id);
-            var transactions = await connection.GetTransactions(id);
+            var transactions = await connection.GetTransactionsAsync(id);
             Transactions = transactions.ToList();
         }
 
@@ -74,13 +79,14 @@ namespace Cranelift.Pages.Users
             }
             else
             {
-
                 var transaction = new UserTransaction
                 {
                     Amount = Amount,
                     CreatedAt = DateTime.UtcNow,
                     PaymentMediumId = PaymentMedium,
                     TypeId = UserTransaction.Types.Recharge,
+                    TransactionId = TransactionId,
+                    PageCount = PageCount,
                     UserId = Id,
                     UserNote = UserNote,
                     AdminNote = AdminNote

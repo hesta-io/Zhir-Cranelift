@@ -34,8 +34,10 @@ namespace Cranelift.Helpers
         public int UserId { get; set; }
         public int TypeId { get; set; }
         public int PaymentMediumId { get; set; }
-        public decimal Amount { get; set; }
+        public int PageCount { get; set; }
+        public decimal? Amount { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string TransactionId { get; set; }
         public int CreatedBy { get; set; }
         public string UserNote { get; set; }
         public string AdminNote { get; set; }
@@ -70,6 +72,7 @@ namespace Cranelift.Helpers
         public DateTime ProcessedAt { get; set; }
         public DateTime FinishedAt { get; set; }
         public string FailingReason { get; set; }
+        public string UserFailingReason { get; set; }
         public bool? Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }

@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Cranelift.Helpers;
 using Cranelift.Services;
 using Hangfire.Console;
-using Cranelift.Steps;
+using Cranelift.Jobs;
 
 namespace Cranelift
 {
@@ -61,20 +61,21 @@ namespace Cranelift
             services.AddScoped<CustomCookieAuthenticationEvents>();
 
             services.AddHostedService<JobListener>();
-            // services.AddHostedService<InitializeDependencies>();
 
             services.AddScoped<IDbContext, MySqlDbContext>();
             services.AddScoped<IStorage, S3Storage>();
             services.AddScoped<PythonHelper>();
             services.AddScoped<DocumentHelper>();
+            services.AddScoped<FastPayService>();
 
+            services.AddHttpClient();
             services.AddRazorPages();
 
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IBackgroundJobClient backgroundJobClient)
         {
             if (env.IsDevelopment())
             {
@@ -86,6 +87,18 @@ namespace Cranelift
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            var scheduledJobs = JobStorage.Current.GetMonitoringApi().ScheduledJobs(0, 100)
+                .Where(j => j.Value.Job.Type == typeof(FastPayWatcherJob))
+                .Select(j => j.Key)
+                .ToArray();
+
+            foreach (var job in scheduledJobs)
+            {
+                backgroundJobClient.Delete(job);
+            }
+
+            backgroundJobClient.Enqueue<FastPayWatcherJob>(job => job.Execute(null));
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();

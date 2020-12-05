@@ -34,20 +34,26 @@ namespace Cranelift.Helpers
 
         public class TranactionViewModel
         {
-            public decimal Amount { get; set; }
-            public string PaymentMethod { get; set; }
+            public int Id { get; set; }
+            public int TransactionId { get; set; }
+            public decimal? Amount { get; set; }
+            public int PageCount { get; set; }
+            public string PaymentMedium { get; set; }
+            public string PaymentMediumCode { get; set; }
             public string UserNote { get; set; }
             public string AdminNote { get; set; }
             public string Type { get; set; }
             public DateTime Date { get; set; }
         }
 
-        public static async Task<IEnumerable<TranactionViewModel>> GetTransactions(this DbConnection connection, int userId)
+        public static async Task<IEnumerable<TranactionViewModel>> GetTransactionsAsync(this DbConnection connection, int? userId = null)
         {
-            var sql = $@"select ut.amount, pm.name as PaymentMethod, tt.name as Type, ut.created_at as Date, ut.user_note, ut.admin_note from user_transaction ut
+            var condition = userId is null ? "" : $"where ut.user_id = {userId}";
+
+            var sql = $@"select ut.id, ut.amount, pm.name as PaymentMedium, pm.code as PaymentMediumCode, tt.name as Type, ut.transaction_id, ut.created_at as Date, ut.user_note, ut.admin_note, ut.page_count from user_transaction ut
 left join payment_medium pm on pm.id = ut.payment_medium_id 
 left join transaction_type tt on tt.id = ut.type_id
-where ut.user_id = {userId}
+{condition}
 order by ut.created_at desc";
 
             return await connection.QueryAsync<TranactionViewModel>(sql);
@@ -119,10 +125,11 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
 
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
-(user_id, type_id, payment_medium_id, amount, user_note, admin_note, created_at, created_by)
-VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @userNote, @adminNote, @createdAt, '{transaction.CreatedBy}');
+(user_id, type_id, payment_medium_id, amount, user_note, admin_note, transaction_id, created_at, created_by)
+VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', @userNote, @adminNote, @transactionId, @createdAt, '{transaction.CreatedBy}');
 ";
 
+            command.AddParameterWithValue("transactionId", transaction.TransactionId);
             command.AddParameterWithValue("createdAt", transaction.CreatedAt);
             command.AddParameterWithValue("userNote", transaction.UserNote);
             command.AddParameterWithValue("adminNote", transaction.AdminNote);
@@ -136,7 +143,7 @@ VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMedi
             command.CommandText = $@"UPDATE job
 SET name=@name, code='{job.Code}', user_id={job.UserId}, page_count={job.PageCount}, status='{job.Status}',
 price_per_page={job.PricePerPage}, queued_at=@queuedAt, processed_at=@processedAt, finished_at=@finishedAt,
-failing_reason=@failingReason, deleted=@deleted
+failing_reason=@failingReason, user_failing_reason=@userFailingReason deleted=@deleted
 WHERE id='{job.Id}'";
 
             command.AddParameterWithValue("name", job.Name);
@@ -144,6 +151,7 @@ WHERE id='{job.Id}'";
             command.AddParameterWithValue("processedAt", job.ProcessedAt);
             command.AddParameterWithValue("finishedAt", job.FinishedAt);
             command.AddParameterWithValue("failingReason", job.FailingReason);
+            command.AddParameterWithValue("userFailingReason", job.UserFailingReason);
             command.AddParameterWithValue("deleted", job.Deleted);
 
             await command.ExecuteNonQueryAsync();
