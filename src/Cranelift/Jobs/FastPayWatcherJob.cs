@@ -55,7 +55,7 @@ namespace Cranelift.Jobs
 
             foreach (var fpTransaction in fastPayTransactions)
             {
-                var ut = userTransactions.FirstOrDefault(t => t.TransactionId == fpTransaction.Id && t.PaymentMediumCode == "ZAIN_CASH");
+                var ut = userTransactions.FirstOrDefault(t => t.TransactionId == fpTransaction.Id && t.PaymentMediumCode == "FAST_PAY");
                 if (ut != null) continue;
 
                 var max = rates.Max(r => r.Key);
