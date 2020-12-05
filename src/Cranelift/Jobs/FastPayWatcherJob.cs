@@ -8,6 +8,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System;
 using Hangfire;
+using Microsoft.Extensions.Configuration;
 
 namespace Cranelift.Jobs
 {
@@ -24,12 +25,12 @@ namespace Cranelift.Jobs
             FastPayService fastPayService,
             IDbContext dbContext,
             IBackgroundJobClient backgroundJobClient,
-            FastPayOptions fastPayOptions)
+            IConfiguration config)
         {
             _fastPayService = fastPayService;
             _dbContext = dbContext;
             _backgroundJobClient = backgroundJobClient;
-            _fastPayOptions = fastPayOptions;
+            _fastPayOptions = config.GetSection(Constants.FastPay).Get<FastPayOptions>();
         }
 
         public async Task Execute(PerformContext context)
