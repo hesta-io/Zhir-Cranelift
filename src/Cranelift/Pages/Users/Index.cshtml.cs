@@ -1,5 +1,6 @@
 using Cranelift.Helpers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Cranelift.Pages.Users
 {
+    [Authorize]
     public class IndexModel : PageModel
     {
         private readonly IDbContext _dbContext;

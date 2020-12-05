@@ -5,11 +5,13 @@ using System.Threading.Tasks;
 
 using Cranelift.Helpers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Cranelift.Pages.Users
 {
+    [Authorize]
     [Microsoft.AspNetCore.Components.Route("/users")]
     public class DetailsModel : PageModel
     {

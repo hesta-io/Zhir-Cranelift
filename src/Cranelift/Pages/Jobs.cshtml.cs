@@ -7,6 +7,7 @@ using Cranelift.Helpers;
 
 using Dapper;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Cranelift.Pages
@@ -33,6 +34,7 @@ namespace Cranelift.Pages
         public string Text => $"https://test.zhir.io/assets/done/{UserId}/{Id}/result.txt";
     }
 
+    [Authorize]
     public class JobsModel : PageModel
     {
         private readonly IDbContext _dbContext;
