@@ -58,8 +58,12 @@ namespace Cranelift.Jobs
                 var ut = userTransactions.FirstOrDefault(t => t.TransactionId == fpTransaction.Id && t.PaymentMediumCode == "ZAIN_CASH");
                 if (ut != null) continue;
 
-                var rate = rates.OrderByDescending(r => r.Key)
-                    .First(r => fpTransaction.Amount <= r.Value);
+                var max = rates.Max(r => r.Key);
+
+                var rate = fpTransaction.Amount <= max ?
+                    rates.OrderByDescending(r => r.Key).First(r => fpTransaction.Amount <= r.Value) :
+                    rates.First(r => r.Key == max);
+
                 // TODO: What to do if the rate sent is not equal to any of our plans?
 
                 var userId = users.FirstOrDefault(u => Normalize(u.PhoneNo) == fpTransaction.SenderMobileNo.ToLower())?.Id;
