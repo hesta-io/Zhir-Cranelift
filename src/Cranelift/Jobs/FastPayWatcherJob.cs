@@ -61,7 +61,7 @@ namespace Cranelift.Jobs
                 var max = rates.Max(r => r.Key);
 
                 var rate = fpTransaction.Amount <= max ?
-                    rates.OrderByDescending(r => r.Key).First(r => fpTransaction.Amount <= r.Value) :
+                    rates.OrderByDescending(r => r.Key).First(r => fpTransaction.Amount <= r.Key) :
                     rates.First(r => r.Key == max);
 
                 // TODO: What to do if the rate sent is not equal to any of our plans?
