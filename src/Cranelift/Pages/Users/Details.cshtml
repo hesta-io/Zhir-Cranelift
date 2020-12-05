@@ -115,6 +115,7 @@
             <th scope="col">Amount</th>
             <th scope="col">Page Count</th>
             <th scope="col">Payment Method</th>
+            <th scope="col">Transaction Id</th>
             <th scope="col">Type</th>
             <th scope="col">User Note</th>
             <th scope="col">Admin Note</th>
@@ -132,6 +133,7 @@
             <td>@((transaction.Amount ?? 0).ToString("N0"))</td>
             <td>@transaction.PageCount.ToString("N0")</td>
             <td>@transaction.PaymentMedium</td>
+            <td>@transaction.TransactionId</td>
             <td>@transaction.Type</td>
             <td>@transaction.UserNote</td>
             <td>@transaction.AdminNote</td>
