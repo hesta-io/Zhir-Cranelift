@@ -56,8 +56,7 @@ namespace Cranelift.Jobs
             foreach (var fpTransaction in fastPayTransactions)
             {
                 var ut = userTransactions.FirstOrDefault(t => t.TransactionId == fpTransaction.Id && t.PaymentMediumCode == "ZAIN_CASH");
-                if (ut is null)
-                    continue;
+                if (ut != null) continue;
 
                 var rate = rates.OrderByDescending(r => r.Key)
                     .First(r => fpTransaction.Amount <= r.Value);
@@ -96,6 +95,8 @@ namespace Cranelift.Jobs
 
         private string Normalize(string phoneNo)
         {
+            phoneNo = phoneNo.Replace(" ", "");
+
             if (string.IsNullOrEmpty(phoneNo))
                 return phoneNo;
 
