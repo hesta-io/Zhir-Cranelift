@@ -69,11 +69,11 @@ namespace Cranelift.Jobs
                 {
                     // Step 1: Make sure the job is not processed
                     var job = await connection.GetJobAsync(jobId);
-                    if (job.HasFinished())
-                    {
-                        context.WriteLine($"This job is already processed.");
-                        return;
-                    }
+                    //if (job.HasFinished())
+                    //{
+                    //    context.WriteLine($"This job is already processed.");
+                    //    return;
+                    //}
 
                     context.CancellationToken.ThrowIfCancellationRequested();
 
