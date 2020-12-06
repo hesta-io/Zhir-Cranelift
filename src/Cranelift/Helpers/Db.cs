@@ -151,7 +151,7 @@ VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMedi
             command.CommandText = $@"UPDATE job
 SET name=@name, code='{job.Code}', user_id={job.UserId}, page_count={job.PageCount}, status='{job.Status}',
 price_per_page={job.PricePerPage}, queued_at=@queuedAt, processed_at=@processedAt, finished_at=@finishedAt,
-failing_reason=@failingReason, user_failing_reason=@userFailingReason deleted=@deleted
+failing_reason=@failingReason, user_failing_reason=@userFailingReason, deleted=@deleted
 WHERE id='{job.Id}'";
 
             command.AddParameterWithValue("name", job.Name);
