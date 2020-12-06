@@ -49,7 +49,7 @@ namespace Cranelift.Helpers
             /// </summary>
             public string flow { get; set; }
             /// <summary>
-            /// Mobile Recharge, P2P Transfer, Deposit/Cash Card
+            /// `Mobile Recharge`, `P2P Transfer`, `Deposit/Cash Card`
             /// </summary>
             public string tx_type { get; set; }
             public decimal amount { get; set; }
@@ -78,7 +78,8 @@ namespace Cranelift.Helpers
             var response = JsonConvert.DeserializeObject<FastPayResponse>(json);
             if (response.code == 200)
             {
-                return response.data.Where(t => t.flow == "in" && t.status == "Success").Select(t => new FastPayTransaction
+                return response.data.Where(t => t.flow == "in" && t.status == "Success" && t.tx_type == "P2P Transfer")
+                    .Select(t => new FastPayTransaction
                 {
                     Id = t.id,
                     Amount = t.amount,
