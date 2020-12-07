@@ -93,6 +93,8 @@ namespace Cranelift
                 .Select(j => j.Key)
                 .ToArray();
 
+            RecurringJob.AddOrUpdate<MonthlyGiftJob>(job => job.Execute(null), "*/1 * * * *");
+
             foreach (var job in scheduledJobs)
             {
                 backgroundJobClient.Delete(job);

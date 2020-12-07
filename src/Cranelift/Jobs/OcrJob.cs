@@ -23,7 +23,6 @@ namespace Cranelift.Jobs
     {
         public int WorkerCount { get; set; }
         public int ParallelPagesCount { get; set; }
-        public bool EnforceBalance { get; set; }
     }
 
     public class OcrJob
@@ -40,6 +39,7 @@ namespace Cranelift.Jobs
         private readonly PythonHelper _pythonHelper;
         private readonly DocumentHelper _documentHelper;
         private readonly WorkerOptions _options;
+        private readonly BillingOptions _billingOptions;
 
         public OcrJob(
             IDbContext dbContext,
@@ -55,6 +55,7 @@ namespace Cranelift.Jobs
             _pythonHelper = pythonHelper;
             _documentHelper = pdfHelper;
             _options = configuration.GetSection(Constants.Worker).Get<WorkerOptions>();
+            _billingOptions = configuration.GetSection(Constants.Billing).Get<BillingOptions>();
         }
 
         [JobDisplayName("OCR Job ({0})")]
@@ -254,7 +255,7 @@ namespace Cranelift.Jobs
 
         private async Task<bool> EnsureEnoughBalance(User user, Job job, DbConnection connection, PerformContext context)
         {
-            if (_options.EnforceBalance && (user.Balance < job.PaidPageCount))
+            if (_billingOptions.EnforceBalance && (user.Balance < job.PaidPageCount))
             {
                 context.WriteLine($"Not enough balance. Needed balance: {job.PaidPageCount}. User Balance: {user.Balance}");
                 job.FailingReason = "Not enough balance.";

@@ -9,6 +9,7 @@
         public const string OcrConnectionName = "OcrConnection";
         public const string HangfireConnectionName = "HangfireConnection";
 
+        public const string Billing = "Billing";
         public const string Worker = "Worker";
         public const string Storage = "Storage";
         public const string Listener = "Listener";
