@@ -34,7 +34,13 @@
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Balance</label>
         <div class="col-sm-6">
-            <input type="text" readonly class="form-control" value="@Model.Data.Balance?.ToString("N0")" />
+            <input type="text" readonly class="form-control" value="@Model.Data.Balance.ToString("N0")" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <label class="col-sm-4 col-form-label">Money Spent</label>
+        <div class="col-sm-6">
+            <input type="text" readonly class="form-control" value="@Model.Data.MoneySpent.ToString("N0")" />
         </div>
     </div>
     <div class="row mb-2">

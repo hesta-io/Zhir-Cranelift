@@ -28,7 +28,7 @@
             <td>@user.CompanyName</td>
             <td>@user.Email</td>
             <td>@user.PhoneNo</td>
-            <td>@user.Balance?.ToString("N0")</td>
+            <td>@user.Balance.ToString("N0")</td>
             <td>@user.MoneySpent.ToString("N0")</td>
             <td><a class="btn btn-primary" asp-page="./Details" asp-route-id="@user.Id">Details</a></td>
         </tr>

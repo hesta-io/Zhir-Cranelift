@@ -51,10 +51,11 @@ namespace Cranelift.Helpers
         public string Email { get; set; }
         public string PhoneNo { get; set; }
         public bool? Deleted { get; set; }
-        public decimal? Balance { get; set; }
+        public decimal Balance { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public int CountJobs { get; set; }
+        public int CountPages { get; set; }
         public decimal MoneySpent { get; set; }
     }
 
