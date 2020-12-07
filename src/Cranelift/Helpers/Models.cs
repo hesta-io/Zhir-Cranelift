@@ -54,7 +54,6 @@ namespace Cranelift.Helpers
         public decimal? Balance { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        public int CountPages { get; set; }
         public int CountJobs { get; set; }
         public decimal MoneySpent { get; set; }
     }

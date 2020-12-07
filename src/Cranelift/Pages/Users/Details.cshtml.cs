@@ -68,12 +68,7 @@ namespace Cranelift.Pages.Users
 
         public async Task OnPost()
         {
-            if (Amount <= 0)
-            {
-                Message = "Amount must be greater than 0.";
-                Success = false;
-            }
-            else if (PaymentMedium < UserTransaction.PaymentMediums.Zhir ||
+            if (PaymentMedium < UserTransaction.PaymentMediums.Zhir ||
                 PaymentMedium > UserTransaction.PaymentMediums.ZhirBalance)
             {
                 Message = "Invalid payment medium.";
@@ -106,8 +101,6 @@ namespace Cranelift.Pages.Users
                     Message = ex.Message;
                     Success = false;
                 }
-
-
             }
 
             await Load(Id);

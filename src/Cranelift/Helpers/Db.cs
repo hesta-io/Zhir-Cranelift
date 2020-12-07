@@ -60,10 +60,9 @@ order by ut.created_at desc";
         }
 
         private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at,
-		(select sum(amount) from user_transaction ut where ut.user_id = u.id) as balance,
-		(select sum(page_count) from job j2 where j2.user_id = u.id) as count_pages,
-		(select count(id) from job j2 where j2.user_id = u.id) as count_jobs,
-		(select sum(abs(amount)) from user_transaction ut2 where ut2.user_id = u.id and ut2.amount < 0) as money_spent
+		(select sum(page_count) from user_transaction ut where ut.user_id = u.id) as balance,
+		(select sum(amount) from user_transaction ut where ut.user_id = u.id) as money_spent,
+		(select count(id) from job j2 where j2.user_id = u.id) as count_jobs
 from `user` u";
 
         public static async Task<IEnumerable<User>> GetUsersAsync(this DbConnection connection)
