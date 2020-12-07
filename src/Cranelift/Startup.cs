@@ -93,7 +93,7 @@ namespace Cranelift
                 .Select(j => j.Key)
                 .ToArray();
 
-            RecurringJob.AddOrUpdate<MonthlyGiftJob>(job => job.Execute(null), "*/1 * * * *");
+            RecurringJob.AddOrUpdate<MonthlyGiftJob>(job => job.Execute(null), "0 0 1 * *"); // At 00:00 of 1st day of every month
 
             foreach (var job in scheduledJobs)
             {
