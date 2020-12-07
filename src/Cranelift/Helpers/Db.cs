@@ -134,7 +134,7 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
 (user_id, type_id, payment_medium_id, amount, page_count, user_note, admin_note, transaction_id, created_at, created_by)
-VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount}', '{transaction.PageCount}', @userNote, @adminNote, @transactionId, @createdAt, '{transaction.CreatedBy}');
+VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount ?? 0}', '{transaction.PageCount}', @userNote, @adminNote, @transactionId, @createdAt, '{transaction.CreatedBy}');
 ";
 
             command.AddParameterWithValue("transactionId", transaction.TransactionId);
