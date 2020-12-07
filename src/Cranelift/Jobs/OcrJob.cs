@@ -75,6 +75,7 @@ namespace Cranelift.Jobs
 
                     if (!await EnsureEnoughBalance(user, job, connection, context))
                     {
+                        await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
                         return;
                     }
 
