@@ -48,7 +48,7 @@ namespace Cranelift.Jobs
                 {
                     UserId = user.Id,
                     Amount = 0,
-                    UserNote = "دیاری 🎁",
+                    UserNote = "دیاری :)",
                     AdminNote = "Monthly free pages",
                     PaymentMediumId = UserTransaction.PaymentMediums.Zhir,
                     TypeId = UserTransaction.Types.Recharge, // Should we make a dedicated transaction type for this?
