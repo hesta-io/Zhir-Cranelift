@@ -66,8 +66,8 @@ namespace Cranelift.Helpers
         public string Code { get; set; }
         public int UserId { get; set; }
         public int PageCount { get; set; }
+        public int PaidPageCount { get; set; }
         public string Status { get; set; }
-        public decimal? PricePerPage { get; set; }
         public DateTime QueuedAt { get; set; }
         public DateTime ProcessedAt { get; set; }
         public DateTime FinishedAt { get; set; }

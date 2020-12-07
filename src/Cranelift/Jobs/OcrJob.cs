@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace Cranelift.Jobs
     {
         public int WorkerCount { get; set; }
         public int ParallelPagesCount { get; set; }
+        public bool EnforceBalance { get; set; }
     }
 
     public class OcrJob
@@ -69,11 +71,12 @@ namespace Cranelift.Jobs
                 {
                     // Step 1: Make sure the job is not processed
                     var job = await connection.GetJobAsync(jobId);
-                    //if (job.HasFinished())
-                    //{
-                    //    context.WriteLine($"This job is already processed.");
-                    //    return;
-                    //}
+                    var user = await connection.GetUserAsync(job.UserId);
+
+                    if (!await EnsureEnoughBalance(user, job, connection, context))
+                    {
+                        return;
+                    }
 
                     context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -196,13 +199,13 @@ namespace Cranelift.Jobs
                         job.Status = ModelConstants.Completed;
 
                         const int minimumNumberOfWordsPerPage = 50;
-                        var paidPages = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
+                        job.PaidPageCount = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
 
                         context.WriteLine("Charging for the job...");
                         await connection.InsertTransactionAsync(new UserTransaction
                         {
                             UserId = job.UserId,
-                            Amount = -(job.PricePerPage * paidPages) ?? 0,
+                            PageCount = -job.PaidPageCount,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = job.UserId,
                             PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
@@ -212,9 +215,16 @@ namespace Cranelift.Jobs
 
                     context.CancellationToken.ThrowIfCancellationRequested();
 
-                    // Update job :)
-                    job.FinishedAt = DateTime.UtcNow;
-                    await connection.UpdateJobAsync(job);
+                    if (!await EnsureEnoughBalance(user, job, connection, context))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        // Update job :)
+                        job.FinishedAt = DateTime.UtcNow;
+                        await connection.UpdateJobAsync(job);
+                    }
 
                     await transaction.CommitAsync(context.CancellationToken.ShutdownToken);
 
@@ -239,6 +249,23 @@ namespace Cranelift.Jobs
 
                 throw;
             }
+        }
+
+        private async Task<bool> EnsureEnoughBalance(User user, Job job, DbConnection connection, PerformContext context)
+        {
+            if (_options.EnforceBalance && (user.Balance < job.PaidPageCount))
+            {
+                context.WriteLine($"Not enough balance. Needed balance: {job.PaidPageCount}. User Balance: {user.Balance}");
+                job.FailingReason = "Not enough balance.";
+                job.UserFailingReason = "باڵانسی پێویستت نییە.";
+                job.Status = ModelConstants.Failed;
+                job.FinishedAt = DateTime.UtcNow;
+                await connection.UpdateJobAsync(job);
+
+                return false;
+            }
+
+            return true;
         }
 
         private int GetIndex(string p)
