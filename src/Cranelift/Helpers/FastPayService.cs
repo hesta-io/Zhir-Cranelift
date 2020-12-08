@@ -70,6 +70,7 @@ namespace Cranelift.Helpers
             _client = httpClientFactory.CreateClient();
             _client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", options.Token);
+            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
         public async Task<IEnumerable<FastPayTransaction>> GetFastPayTransactionsAsync()
