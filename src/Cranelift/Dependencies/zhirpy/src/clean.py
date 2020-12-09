@@ -83,18 +83,20 @@ img = io.imread(args.source, as_gray=True)
 avg = img.mean(axis=0).mean(axis=0)
 
 if avg < 0.5:
-    img = util.invert(img)
+    # Images whith black background should NOT be cleaned
+    directory = os.path.dirname(args.dest)
+    if len(directory) > 0:
+        os.makedirs(directory, exist_ok=True)
+    shutil.copy(args.source, args.dest)
 
     print("DID NOTHING")
-if isScreenshot(img):
+elif isScreenshot(img):
     io.imsave(args.dest, img)
 
     print("JUST GRAYSCALE")
 else:
     # Binarize input image and apply local theresould
-    adaptiveThresh = filters.thresholding.threshold_sauvola(
-        img, r=0.2, window_size=11
-    )  # this current method gives far better results
+    adaptiveThresh = filters.thresholding.threshold_sauvola(img, r=0.5, window_size=21) # this current method gives far better results
     # adaptiveThresh = filters.threshold_local(img, block_size = 11 , offset = 0.05, method = "mean")
 
     binarizedImage = img >= adaptiveThresh
@@ -104,6 +106,7 @@ else:
     fixedImage = transform.rotate(
         binarizedImage, rotationAngle, cval=1, mode="constant"
     )
+    
 
     # Save result
     io.imsave(args.dest, fixedImage)
