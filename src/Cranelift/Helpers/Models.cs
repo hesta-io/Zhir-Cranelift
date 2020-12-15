@@ -53,6 +53,8 @@ namespace Cranelift.Helpers
         public bool? Deleted { get; set; }
         public decimal Balance { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool? Verified { get; set; }
+        public bool? IsAdmin { get; set; }
 
         public int CountJobs { get; set; }
         public int CountPages { get; set; }

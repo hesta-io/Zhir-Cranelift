@@ -47,6 +47,9 @@ namespace Cranelift.Pages.Users
         [BindProperty]
         public decimal Amount { get; set; }
 
+        [BindProperty]
+        public bool Verified { get; set; }
+
         public User Data { get; set; }
 
         public List<Queries.TranactionViewModel> Transactions { get; set; }
@@ -66,7 +69,18 @@ namespace Cranelift.Pages.Users
             Transactions = transactions.ToList();
         }
 
-        public async Task OnPost()
+        public async Task OnPostUser()
+        {
+            if (Id > 0)
+            {
+                using var connection = await _dbContext.OpenOcrConnectionAsync();
+                var user = await connection.GetUserAsync(Id);
+                user.Verified = Verified;
+                await connection.UpdateUserAsync(user);
+            }
+        }
+
+        public async Task OnPostRecharge()
         {
             if (PaymentMedium < UserTransaction.PaymentMediums.Zhir ||
                 PaymentMedium > UserTransaction.PaymentMediums.ZhirBalance)

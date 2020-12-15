@@ -56,11 +56,21 @@
         </div>
     </div>
     <div class="row mb-2">
-        <label class="col-sm-4 col-form-label">Money spent</label>
+        <label class="col-sm-4 col-form-label">Money Spent</label>
         <div class="col-sm-6">
             <input type="text" readonly class="form-control" value="@Model.Data.MoneySpent.ToString("N0")" />
         </div>
     </div>
+    <div class="row mb-2">
+        <label class="col-sm-4 col-form-label">Is Verified</label>
+        <div class="col-sm-6">
+            <input asp-for="Verified" class="form-control" />
+        </div>
+    </div>
+
+    <input asp-for="Id" type="hidden" />
+
+    <button type="submit" asp-page-handler="User" class="btn btn-primary">Update User Info</button>
 </form>
 
 <hr class="mb-3" />
@@ -108,7 +118,7 @@
 
     <input asp-for="Id" type="hidden" />
 
-    <button type="submit" class="btn btn-primary">Recharge</button>
+    <button type="submit" class="btn btn-primary" asp-page-handler="Recharge">Recharge</button>
 </form>
 
 <hr class="mb-3" />

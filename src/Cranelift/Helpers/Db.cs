@@ -35,7 +35,7 @@ namespace Cranelift.Helpers
         public class TranactionViewModel
         {
             public int Id { get; set; }
-            public int TransactionId { get; set; }
+            public string TransactionId { get; set; }
             public decimal? Amount { get; set; }
             public int PageCount { get; set; }
             public string PaymentMedium { get; set; }
@@ -44,6 +44,15 @@ namespace Cranelift.Helpers
             public string AdminNote { get; set; }
             public string Type { get; set; }
             public DateTime Date { get; set; }
+        }
+
+        public static async Task UpdateUserAsync(this DbConnection connection, User user)
+        {
+            var sql = $"UPDATE `user` SET verified = {(user.Verified == true ? 1 : 0)} WHERE id = '{user.Id}'";
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            await command.ExecuteNonQueryAsync();
         }
 
         public static async Task<IEnumerable<TranactionViewModel>> GetTransactionsAsync(this DbConnection connection, int? userId = null)
@@ -59,7 +68,7 @@ order by ut.created_at desc";
             return await connection.QueryAsync<TranactionViewModel>(sql);
         }
 
-        private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at,
+        private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at, verified, is_admin,
 		(select sum(page_count) from user_transaction ut where ut.user_id = u.id) as balance,
 		(select sum(amount) from user_transaction ut where ut.user_id = u.id) as money_spent,
 		(select count(page_count) from job j2 where j2.user_id = u.id) as count_pages,
