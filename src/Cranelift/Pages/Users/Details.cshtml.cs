@@ -65,6 +65,7 @@ namespace Cranelift.Pages.Users
         {
             using var connection = await _dbContext.OpenOcrConnectionAsync();
             Data = await connection.GetUserAsync(id);
+            Verified = Data.Verified;
             var transactions = await connection.GetTransactionsAsync(id);
             Transactions = transactions.ToList();
         }
