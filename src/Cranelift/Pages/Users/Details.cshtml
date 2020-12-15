@@ -6,7 +6,7 @@
 
 <h2>Profile: </h2>
 
-<form>
+<form asp-page="." method="post">
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Name</label>
         <div class="col-sm-6">
@@ -62,7 +62,7 @@
         </div>
     </div>
     <div class="row mb-2">
-        <label class="col-sm-4 col-form-label">Is Verified</label>
+        <label asp-for="Verified" class="col-sm-4 col-form-label">Is Verified</label>
         <div class="col-sm-6">
             <input asp-for="Verified" class="form-control" />
         </div>
@@ -83,7 +83,7 @@
     </div>
 }
 
-<form asp-page=".">
+<form asp-page="." method="post">
     <div class="form-group">
         <label asp-for="Amount">Amount: </label>
         <input asp-for="Amount" class="form-control" />

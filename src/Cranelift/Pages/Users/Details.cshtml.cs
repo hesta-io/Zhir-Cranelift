@@ -78,6 +78,8 @@ namespace Cranelift.Pages.Users
                 user.Verified = Verified;
                 await connection.UpdateUserAsync(user);
             }
+
+            await Load(Id);
         }
 
         public async Task OnPostRecharge()
