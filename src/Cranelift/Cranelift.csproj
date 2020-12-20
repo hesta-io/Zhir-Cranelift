@@ -123,6 +123,9 @@
     <None Update="Dependencies\zhirpy\src\tess.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Dependencies\zhirpy\src\zhirpy.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
