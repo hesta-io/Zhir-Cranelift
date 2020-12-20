@@ -292,7 +292,7 @@ namespace Cranelift.Jobs
 
             if (page.Succeeded)
             {
-                var result = await RunTesseract(donePath, cancellationToken, "ckb+eng");
+                var result = await RunTesseract(donePath, cancellationToken, "ckb");
                 page.Succeeded = result.Success;
 
                 if (page.Succeeded)
