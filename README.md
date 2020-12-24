@@ -31,6 +31,12 @@ The background job processing controller for ZhirOCR.
     "Secret": "***",
     "BucketName": "zhir-ocr"
   },
+  "Email": {
+    "FromAddress": "zhir.company.io@gmail.com",
+    "Password": "***",
+    "Host": "smtp.gmail.com",
+    "Port": 587
+  },
   "FastPay": {
   "Token": "***",
   "Number": "+9647507665935",

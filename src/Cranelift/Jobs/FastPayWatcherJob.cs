@@ -19,17 +19,20 @@ namespace Cranelift.Jobs
         private readonly FastPayService _fastPayService;
         private readonly IDbContext _dbContext;
         private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly EmailSender _emailSender;
         private readonly FastPayOptions _fastPayOptions;
 
         public FastPayWatcherJob(
             FastPayService fastPayService,
             IDbContext dbContext,
             IBackgroundJobClient backgroundJobClient,
+            EmailSender emailSender,
             IConfiguration config)
         {
             _fastPayService = fastPayService;
             _dbContext = dbContext;
             _backgroundJobClient = backgroundJobClient;
+            _emailSender = emailSender;
             _fastPayOptions = config.GetSection(Constants.FastPay).Get<FastPayOptions>();
         }
 
@@ -69,7 +72,7 @@ namespace Cranelift.Jobs
                 var userId = users.FirstOrDefault(u => Normalize(u.PhoneNo) == fpTransaction.SenderMobileNo.ToLower())?.Id;
                 if (userId is null)
                 {
-                    // WHAT TO DO??
+                    await _emailSender.SendEmail("zhir.company.io@gmail.com", "Unknown transaction in FastPay", $"Can't find the owner for transaction #{fpTransaction.Id} from {fpTransaction.SenderName} ({fpTransaction.SenderMobileNo}) at {fpTransaction.Date}. Add a record for it in Cranelift to silence this alert.");
 
                     context.WriteLine($"Could not find any user for transaction {fpTransaction.Id}!");
                     continue;

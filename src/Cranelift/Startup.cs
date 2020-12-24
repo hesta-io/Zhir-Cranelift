@@ -1,22 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Hangfire;
 using Hangfire.MySql;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Cranelift.Helpers;
 using Cranelift.Services;
 using Hangfire.Console;
 using Cranelift.Jobs;
+using System.Net;
 
 namespace Cranelift
 {
@@ -67,6 +64,20 @@ namespace Cranelift
             services.AddScoped<PythonHelper>();
             services.AddScoped<DocumentHelper>();
             services.AddScoped<FastPayService>();
+            services.AddScoped<EmailSender>();
+
+            var emailOptions = Configuration.GetSection("Email").Get<EmailOptions>();
+            if (emailOptions is null)
+                throw new InvalidOperationException("Please fill out email configuration.");
+
+            services.AddFluentEmail(emailOptions.FromAddress, "Zhir")
+                .AddSmtpSender(() => new System.Net.Mail.SmtpClient
+                {
+                    Host = emailOptions.Host,
+                    Port = emailOptions.Port,
+                    Credentials = new NetworkCredential(emailOptions.FromAddress, emailOptions.Password),
+                    EnableSsl = true,
+                });
 
             services.AddHttpClient();
             services.AddRazorPages();
