@@ -292,7 +292,7 @@ namespace Cranelift.Jobs
 
             if (page.Succeeded)
             {
-                var result = await RunTesseract(donePath, cancellationToken, "ckb");
+                var result = await RunTesseract(donePath, cancellationToken, job.GetLanguages());
                 page.Succeeded = result.Success;
 
                 if (page.Succeeded)
@@ -379,16 +379,7 @@ namespace Cranelift.Jobs
 
                 if (languages is null || languages.Length == 0)
                 {
-                    languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
-                                      .Select(f => Path.GetFileNameWithoutExtension(f))
-                                      .Where(f => f.ToLowerInvariant().StartsWith("ckb"))
-                                      .ToArray();
-                }
-                else if (languages[0].ToLowerInvariant() == "all")
-                {
-                    languages = Directory.EnumerateFiles(modelsPath, "*.traineddata")
-                                      .Select(f => Path.GetFileNameWithoutExtension(f))
-                                      .ToArray();
+                    languages = new[] { "ckb" };
                 }
 
                 var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");

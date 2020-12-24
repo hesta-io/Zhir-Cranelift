@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Linq;
 
 namespace Cranelift.Helpers
 {
@@ -66,6 +67,7 @@ namespace Cranelift.Helpers
         public string Id { get; set; }
         public string Name { get; set; }
         public string Code { get; set; }
+        public string Lang { get; set; }
         public int UserId { get; set; }
         public int PageCount { get; set; }
         public int PaidPageCount { get; set; }
@@ -78,6 +80,14 @@ namespace Cranelift.Helpers
         public bool? Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
+
+        public string[] GetLanguages()
+        {
+            if (string.IsNullOrWhiteSpace(Lang))
+                return new string[0];
+
+            return Lang.Split(",").Select(l => l.Trim()).ToArray();
+        }
 
         public bool HasFinished()
         {
