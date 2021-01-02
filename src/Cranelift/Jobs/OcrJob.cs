@@ -381,6 +381,10 @@ namespace Cranelift.Jobs
                 {
                     languages = new[] { "ckb" };
                 }
+                else if (languages.Contains("ara") && languages.Contains("ckb"))
+                {
+                    languages = languages.Where(l => l != "ara").ToArray();
+                }
 
                 var workingDir = Path.Combine(_environment.ContentRootPath, "Dependencies/zhirpy");
                 var scriptPath = Path.Combine(workingDir, "src/tess.py");
