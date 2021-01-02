@@ -37,7 +37,9 @@ The background job processing controller for ZhirOCR.
     "Port": 587
   },
   "FastPay": {
-  "Token": "***",
+  "Password": "******",
+  "DeviceId": "****",
+  "AppId": "***",
   "Number": "+9647507665935",
   "IntervalMinMinutes": 10,
   "IntervalMaxMinutes": 40
