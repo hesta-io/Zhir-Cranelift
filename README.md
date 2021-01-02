@@ -69,3 +69,28 @@ The background job processing controller for ZhirOCR.
 6. In Visual Studio 2019 press CTRL + F5 to run Cranelift
 
 7. Browse to https://localhost:5001/
+
+## Dependencies
+
+### Ubuntu 20.04 LTS
+While Zhir OCR is cross-platform, we have only tested it on Ubuntu 20.04. 
+
+### Python3
+```
+sudo apt install python3-pip
+```
+
+### Zhirpy Dependencies
+```
+pip3 install -r Dependencies/zhirpy/requirements.txt
+```
+
+### Tesseract 5-alpha or better
+
+```
+sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+sudo apt-get update
+sudo apt install tesseract-ocr
+```
+
+Read more about [installing Tesseract here](https://tesseract-ocr.github.io/tessdoc/#500x).
