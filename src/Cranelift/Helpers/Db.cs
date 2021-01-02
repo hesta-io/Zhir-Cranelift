@@ -167,7 +167,12 @@ WHERE id='{job.Id}'";
             command.AddParameterWithValue("queuedAt", job.QueuedAt);
             command.AddParameterWithValue("processedAt", job.ProcessedAt);
             command.AddParameterWithValue("finishedAt", job.FinishedAt);
-            command.AddParameterWithValue("failingReason", job.FailingReason);
+
+            var failingReason = job.FailingReason;
+            if (failingReason.Length > 450)
+                failingReason = failingReason.Substring(0, 450);
+
+            command.AddParameterWithValue("failingReason", failingReason);
             command.AddParameterWithValue("userFailingReason", job.UserFailingReason);
             command.AddParameterWithValue("deleted", job.Deleted);
 
