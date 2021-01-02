@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using System;
 using System.Collections.Generic;
@@ -15,6 +17,9 @@ namespace Cranelift.Helpers
     {
         public string Token { get; set; }
         public string Number { get; set; }
+        public string Password { get; set; }
+        public string DeviceId { get; set; }
+        public string AppId { get; set; }
         public int IntervalMinMinutes { get; set; }
         public int IntervalMaxMinutes { get; set; }
     }
@@ -30,6 +35,8 @@ namespace Cranelift.Helpers
 
     public class FastPayService
     {
+        private static string _token;
+        private FastPayOptions _options;
         private HttpClient _client;
 
         public class FastPayResponse
@@ -62,34 +69,81 @@ namespace Cranelift.Helpers
 
         public FastPayService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
-            var options = configuration.GetSection(Constants.FastPay).Get<FastPayOptions>();
-
-            if (options?.Token is null)
-                throw new ArgumentNullException("FastPay token");
+            _options = configuration.GetSection(Constants.FastPay).Get<FastPayOptions>();
 
             _client = httpClientFactory.CreateClient();
-            _client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", options.Token);
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
         public async Task<IEnumerable<FastPayTransaction>> GetFastPayTransactionsAsync()
         {
-            var json = await _client.GetStringAsync("https://secure.fast-pay.cash/api/v2/transaction-history");
-            var response = JsonConvert.DeserializeObject<FastPayResponse>(json);
-            if (response.code == 200)
+            return await GetFastPayTransactionsAsync(fetchToken: false);
+        }
+
+        private async Task<IEnumerable<FastPayTransaction>> GetFastPayTransactionsAsync(bool fetchToken = false)
+        {
+            if (fetchToken || _token is null)
             {
-                return response.data.Where(t => t.flow == "in" && t.status == "Success" && t.tx_type == "P2P Transfer")
-                    .Select(t => new FastPayTransaction
-                {
-                    Id = t.id,
-                    Amount = t.amount,
-                    Date = t.updated_at,
-                    SenderMobileNo = t.mobile_no,
-                    SenderName = t.name
-                }).ToArray();
+                _token = await GetToken(_client);
             }
-            throw new InvalidOperationException($"Call to FastPay API failed. Code: {response.code}. Message: {string.Join("\n", response.messages)}");
+
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+
+            var response = await _client.GetAsync("https://secure.fast-pay.cash/api/v2/transaction-history");
+            var json = await response.Content.ReadAsStringAsync();
+            var fastpayResponse = JsonConvert.DeserializeObject<FastPayResponse>(json);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || fastpayResponse.code == 401)
+            {
+                return await GetFastPayTransactionsAsync(fetchToken: true);
+            }
+            else if (fastpayResponse.code == 200)
+            {
+                return fastpayResponse.data.Where(t => t.flow == "in" && t.status == "Success" && t.tx_type == "P2P Transfer")
+                    .Select(t => new FastPayTransaction
+                    {
+                        Id = t.id,
+                        Amount = t.amount,
+                        Date = t.updated_at,
+                        SenderMobileNo = t.mobile_no,
+                        SenderName = t.name
+                    }).ToArray();
+            }
+            else
+            {
+                throw new InvalidOperationException($"Call to FastPay API failed. Code: {fastpayResponse.code}. Message: {string.Join("\n", fastpayResponse.messages)}");
+            }
+        }
+
+        private async Task<string> GetToken(HttpClient client)
+        {
+            var values = new Dictionary<string, string>
+            {
+                { "mobile_no", _options.Number },
+                { "password", _options.Password },
+                { "device_id", _options.DeviceId },
+                { "app_id", _options.AppId },
+                { "lang", "en" },
+            };
+
+            var response = await client.PostAsync("https://secure.fast-pay.cash/api/v2/signin/step1", new FormUrlEncodedContent(values));
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var parsedJson = JObject.Parse(responseBody);
+
+                var code = parsedJson.GetValue("code").Value<int>();
+                if (code == 200)
+                {
+                    return parsedJson.GetValue("api_token").Value<string>();
+                }
+                else
+                {
+                    var messages = parsedJson.Property("messages").Value.Values<string>();
+                    throw new InvalidOperationException($"Could not get a FastPay token. Code: {code}. Messages:\n{string.Join(", ", messages)}");
+                }
+            }
+
+            throw new InvalidOperationException($"Could not get a FastPay token. API returned status code {response.StatusCode}");
         }
     }
 }
