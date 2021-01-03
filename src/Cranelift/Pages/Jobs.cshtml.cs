@@ -29,9 +29,9 @@ namespace Cranelift.Pages
         public double SecondsInQueue => (ProcessedAt - CreatedAt).TotalSeconds;
         public double SecondsInProcessing => (FinishedAt - ProcessedAt).TotalSeconds;
 
-        public string Pdf => $"https://test.zhir.io/assets/done/{UserId}/{Id}/result.pdf";
-        public string Word => $"https://test.zhir.io/assets/done/{UserId}/{Id}/result.docx";
-        public string Text => $"https://test.zhir.io/assets/done/{UserId}/{Id}/result.txt";
+        public string Pdf => $"https://zhir.io/assets/done/{UserId}/{Id}/result.pdf";
+        public string Word => $"https://zhir.io/assets/done/{UserId}/{Id}/result.docx";
+        public string Text => $"https://zhir.io/assets/done/{UserId}/{Id}/result.txt";
     }
 
     [Authorize]
