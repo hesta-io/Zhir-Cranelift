@@ -13,6 +13,7 @@
             <th scope="col">Queue (s)</th>
             <th scope="col">Processing (s)</th>
             <th scope="col">Pages</th>
+            <th scope="col">Languages</th>
             <th scope="col">Status</th>
             <th scope="col">Failing Reason</th>
             <th scope="col">Details</th>
@@ -31,6 +32,7 @@
                 <td>@job.SecondsInQueue.ToString("N0")</td>
                 <td>@job.SecondsInProcessing.ToString("N0")</td>
                 <td>@job.PageCount.ToString("N0")</td>
+                <td>@job.Lang</td>
                 <td>@job.Status</td>
                 <td>@job.FailingReason</td>
                 <td>
