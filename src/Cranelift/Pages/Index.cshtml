@@ -4,14 +4,107 @@
     ViewData["Title"] = "Home page";
 }
 
-<table style="height: 600px; width:100%">
-    <tbody>
-        <tr>
-            <td class="align-middle">
-                <center>
-                    <img src="~/images/crane-machine.svg" width="256" height="256" />
-                </center>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<div class="row justify-content-center">
+    <div class="card col-md-5 m-md-2">
+        <div class="card-body">
+            <h3 class="card-title text-center" id="all-users-number">?</h3>
+            <p class="card-text text-center">Users (<span id="verified-users-number"></span> Verified, <span id="active-users-number"></span> Active in last 30 days)</p>
+        </div>
+    </div>
+
+    <div class="card col-md-5 m-md-2">
+        <div class="card-body">
+            <h3 class="card-title text-center"><span id="processing-time-number">?</span><span> Seconds</span></h3>
+            <p class="card-text text-center">Processing time per page (last 30 days)</p>
+        </div>
+    </div>
+
+    <div class="card col-md-5 m-md-2">
+        <div class="card-body">
+            <h3 class="card-title text-center" id="new-users-number">?</h3>
+            <p class="card-text text-center">New Users in the past 30 days</p>
+        </div>
+    </div>
+
+    <div class="card col-md-5 m-md-2">
+        <div class="p-3 card-body">
+            <h3 class="card-title text-center" id="total-jobs-number">?</h3>
+            <p class="card-text text-center">Jobs (<span id="success-rate-number"></span>% success)</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <canvas id="jobs-chart"></canvas>
+    </div>
+
+    <div class="col-md-6">
+        <canvas id="users-chart"></canvas>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+    <script>
+        async function getJson(url) {
+            var response = await fetch(url);
+            return await response.json();
+        }
+
+        function setElementText(id, text) {
+            let element = document.getElementById(id);
+            element.textContent = text;
+        }
+
+        function createChart(ctx, title, type, data, stacked) {
+            return new Chart(ctx, {
+                type: type,
+                data: data,
+                options: {
+                    title: {
+                        display: true,
+                        text: title
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    responsive: true,
+                    scales: {
+                        xAxes: [{
+                            stacked: stacked,
+                        }],
+                        yAxes: [{
+                            stacked: stacked
+                        }]
+                    }
+                }
+            });
+        }
+    </script>
+    <script>
+        window.onload = async function () {
+            var stats = await getJson('@Url.Action("GetStats", "Charts", new { days = 30 })');
+            setElementText('all-users-number', stats.allUsers);
+            setElementText('active-users-number', stats.activeUsers);
+            setElementText('verified-users-number', stats.verifiedUsers);
+            setElementText('new-users-number', stats.newUsers);
+
+            let successRate = Math.round(((stats.completedJobs / stats.totalJobs) * 10) * 100) / 10;
+
+            setElementText('total-jobs-number', stats.totalJobs);
+            setElementText('success-rate-number', successRate);
+
+            setElementText('processing-time-number', Math.round(stats.averageProcessingTimePerPage * 100) / 100);
+
+            var jobs = await getJson('@Url.Action("GetJobCount", "Charts", new { days = 30 })');
+            var jobsCtx = document.getElementById('jobs-chart').getContext('2d');
+            createChart(jobsCtx, 'Jobs executed in the past 30 days', 'bar', jobs, true);
+
+            var users = await getJson('@Url.Action("GetUserCount", "Charts", new { days = 30 })');
+            var usersCtx = document.getElementById('users-chart').getContext('2d');
+            createChart(usersCtx, 'User registrations in the past 30 days', 'bar', users, true);
+        };
+    </script>
+}

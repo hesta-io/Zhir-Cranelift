@@ -81,6 +81,7 @@ namespace Cranelift
 
             services.AddHttpClient();
             services.AddRazorPages();
+            services.AddControllers();
 
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
@@ -130,6 +131,7 @@ namespace Cranelift
             {
                 endpoints.MapRazorPages();
                 endpoints.MapHangfireDashboard();
+                endpoints.MapControllers();
             });
         }
     }
