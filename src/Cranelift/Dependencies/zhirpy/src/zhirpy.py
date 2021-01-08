@@ -72,7 +72,7 @@ def isScreenshot(image):
     maxValue = np.max(histUnit)
     spikesFilter = histUnit >= (maxValue / 2)
     spikes = histUnit[spikesFilter]
-    if len(spikes) > 1:
+    if len(spikes) > 2:
         return False
     else:
         return True
@@ -94,11 +94,11 @@ def addBorders(img):
     return borderedImage
 
 def clean(source, dest):
+    
     # Read source image
     img = cv2.imread(source, 0)
-    
     avg = img.mean(axis=0).mean(axis=0)
-
+        
     if avg < 0.5:
         # Images whith black background should NOT be cleaned
         directory = os.path.dirname(dest)
@@ -108,9 +108,24 @@ def clean(source, dest):
 
         print("DID NOTHING")
     elif isScreenshot(img):
-        io.imsave(dest, img)
-
-        print("JUST GRAYSCALE")
+        hist = exposure.histogram(img)
+        histUnit = hist[0]
+        middlePoint = round(len(histUnit)/2)
+        leftPart = sum(histUnit[0:middlePoint])
+        rightPart = sum(histUnit[middlePoint:len(histUnit)])
+        if leftPart > rightPart:
+            # screenshot is taken from a dark background with white text
+            # invert the image to fix them
+            invertedImage = util.invert(img)
+            io.imsave(dest, invertedImage)
+            print("IMAGE INVERTED")
+            
+        else:
+            io.imsave(dest, img)
+            print("JUST GRAYSCALE")
+            
+            
+    
     else:
         # remove shadows
         img = removeShadows(img)
