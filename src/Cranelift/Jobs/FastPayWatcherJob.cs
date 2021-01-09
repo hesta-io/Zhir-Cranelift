@@ -72,7 +72,7 @@ namespace Cranelift.Jobs
                 var userId = users.FirstOrDefault(u => Normalize(u.PhoneNo) == fpTransaction.SenderMobileNo.ToLower())?.Id;
                 if (userId is null)
                 {
-                    await _emailSender.SendEmail("zhir.company.io@gmail.com", "Unknown transaction in FastPay", $"Can't find the owner for transaction #{fpTransaction.Id} from {fpTransaction.SenderName} ({fpTransaction.SenderMobileNo}) at {fpTransaction.Date}. Add a record for it in Cranelift to silence this alert.");
+                    await _emailSender.SendEmail("zhir.company.io@gmail.com", "Unknown transaction in FastPay", $"Can't find the owner for transaction #{fpTransaction.Id} from {fpTransaction.SenderName} ({fpTransaction.SenderMobileNo}) at {fpTransaction.Date} for {fpTransaction.Amount} IQD. Add a record for it in Cranelift to silence this alert.");
 
                     context.WriteLine($"Could not find any user for transaction {fpTransaction.Id}!");
                     continue;
