@@ -18,6 +18,7 @@ namespace Cranelift.Pages
         public long Id { get; set; }
         public string Name { get; set; }
         public string CompanyName { get; set; }
+        public int Balance { get; set; }
         public int NumberOfJobs { get; set; }
         public int NumberOfPages { get; set; }
     }
@@ -41,6 +42,7 @@ namespace Cranelift.Pages
             const int NumberOfDays = 30;
             const int Limit = 10;
             var query = $@"select id, name, company_name, 
+        (select sum(page_count) from user_transaction ut where ut.user_id = u.id) as balance,
 		(select sum(page_count) from job j where j.user_id = u.id and DATEDIFF(UTC_TIMESTAMP(), j.created_at) <= {NumberOfDays}) as number_of_pages,
 		(select count(id) from job j2 where j2.user_id = u.id and DATEDIFF(UTC_TIMESTAMP(), j2.created_at) <= {NumberOfDays}) as number_of_jobs
 from `user` u
