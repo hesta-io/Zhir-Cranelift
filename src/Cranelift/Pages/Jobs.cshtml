@@ -10,7 +10,8 @@
             <th scope="col">Date</th>
             <th scope="col">User Name</th>
             <th scope="col">Job Name</th>
-            <th scope="col">Queue/Processing</th>
+            <th scope="col">Queue (s)</th>
+            <th scope="col">Processing (s)</th>
             <th scope="col">Pages</th>
             <th scope="col">Info</th>
             <th scope="col">Details</th>
@@ -26,8 +27,8 @@
             <td>@job.CreatedAt</td>
             <td><a asp-page="./Users/Details" target="_blank" asp-route-id="@job.UserId">@job.UserName</a></td>
             <td>@job.JobName</td>
-            <td>@job.SecondsInQueue.ToString("N0") s/ @job.SecondsInProcessing.ToString("N0") s</td>
-            <td></td>
+            <td>@job.SecondsInQueue.ToString("N0")</td>
+            <td>@job.SecondsInProcessing.ToString("N0")</td>
             <td>@job.PageCount.ToString("N0")</td>
             <td><p><b>Languages: </b>@job.Lang</p>
                 <p><b>Status: </b>@job.Status</p>
