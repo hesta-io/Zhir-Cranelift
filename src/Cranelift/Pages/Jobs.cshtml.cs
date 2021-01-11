@@ -26,6 +26,7 @@ namespace Cranelift.Pages
         public int PageCount { get; set; }
         public string Id { get; set; }
         public string Lang { get; set; }
+        public int Rate { get; set; }
 
         public double SecondsInQueue => (ProcessedAt - CreatedAt).TotalSeconds;
         public double SecondsInProcessing => (FinishedAt - ProcessedAt).TotalSeconds;
@@ -51,7 +52,7 @@ namespace Cranelift.Pages
         {
             using var connection = await _dbContext.OpenOcrConnectionAsync();
 
-            var sql = @"select j.id, j.name as job_name, j.lang as Lang, u.name as user_name, u.id as user_id, j.queued_at, j.processed_at, j.finished_at, j.created_at, j.status, j.failing_reason, j.page_count from job j
+            var sql = @"select j.id, j.name as job_name, j.lang as Lang, u.name as user_name,j.rate, u.id as user_id, j.queued_at, j.processed_at, j.finished_at, j.created_at, j.status, j.failing_reason, j.page_count from job j
 left join `user` u on u.id = j.user_id 
 order by j.created_at DESC";
 

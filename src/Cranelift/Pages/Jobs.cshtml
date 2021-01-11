@@ -13,6 +13,7 @@
             <th scope="col">Queue (s)</th>
             <th scope="col">Processing (s)</th>
             <th scope="col">Pages</th>
+            <th scope="col">Rating</th>
             <th scope="col">Info</th>
             <th scope="col">Details</th>
         </tr>
@@ -30,6 +31,7 @@
             <td>@job.SecondsInQueue.ToString("N0")</td>
             <td>@job.SecondsInProcessing.ToString("N0")</td>
             <td>@job.PageCount.ToString("N0")</td>
+            <td>@(job.Rate == -1000 ? "" : job.Rate.ToString())</td>
             <td><p><b>Languages: </b>@job.Lang</p>
                 <p><b>Status: </b>@job.Status</p>
                 <p><b>FailingReason: </b>@job.FailingReason</p></td>
