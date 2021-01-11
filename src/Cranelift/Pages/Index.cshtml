@@ -40,13 +40,7 @@
     </div>
 
     <div class="col-md-6">
-        <canvas id="sign-ups-chart"></canvas>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <canvas id="daily-active-users-chart"></canvas>
+        <canvas id="users-chart"></canvas>
     </div>
 </div>
 
@@ -134,17 +128,13 @@
 
             setElementText('processing-time-number', Math.round(stats.averageProcessingTimePerPage * 100) / 100);
 
-            var jobs = await getJson('@Url.Action("GetJobCount", "Charts", new { days = 30 })');
+            var jobs = await getJson('@Url.Action("GetDailyJobs", "Charts", new { days = 30 })');
             var jobsCtx = document.getElementById('jobs-chart').getContext('2d');
             createChart(jobsCtx, 'Jobs executed in the past 30 days', 'bar', jobs, true);
 
-            var signUps = await getJson('@Url.Action("GetSignUpsCount", "Charts", new { days = 30 })');
-            var signUpsCtx = document.getElementById('sign-ups-chart').getContext('2d');
-            createChart(signUpsCtx, 'User registrations in the past 30 days', 'bar', signUps, true);
-
-            var dailyActiveUsers = await getJson('@Url.Action("GetActiveDailyActiveUsers", "Charts", new { days = 30 })');
-            var dailyActiveUsersCtx = document.getElementById('daily-active-users-chart').getContext('2d');
-            createChart(dailyActiveUsersCtx, 'Daily active users in the past 30 days', 'bar', dailyActiveUsers, true);
+            var users = await getJson('@Url.Action("GetDailyUsers", "Charts", new { days = 30 })');
+            var usersCtx = document.getElementById('users-chart').getContext('2d');
+            createChart(usersCtx, 'Daily user activity in the past 30 days', 'bar', users, false);
         };
     </script>
 }
