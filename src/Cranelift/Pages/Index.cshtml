@@ -40,7 +40,13 @@
     </div>
 
     <div class="col-md-6">
-        <canvas id="users-chart"></canvas>
+        <canvas id="sign-ups-chart"></canvas>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <canvas id="daily-active-users-chart"></canvas>
     </div>
 </div>
 
@@ -132,9 +138,13 @@
             var jobsCtx = document.getElementById('jobs-chart').getContext('2d');
             createChart(jobsCtx, 'Jobs executed in the past 30 days', 'bar', jobs, true);
 
-            var users = await getJson('@Url.Action("GetUserCount", "Charts", new { days = 30 })');
-            var usersCtx = document.getElementById('users-chart').getContext('2d');
-            createChart(usersCtx, 'User registrations in the past 30 days', 'bar', users, true);
+            var signUps = await getJson('@Url.Action("GetSignUpsCount", "Charts", new { days = 30 })');
+            var signUpsCtx = document.getElementById('sign-ups-chart').getContext('2d');
+            createChart(signUpsCtx, 'User registrations in the past 30 days', 'bar', signUps, true);
+
+            var dailyActiveUsers = await getJson('@Url.Action("GetActiveDailyActiveUsers", "Charts", new { days = 30 })');
+            var dailyActiveUsersCtx = document.getElementById('daily-active-users-chart').getContext('2d');
+            createChart(dailyActiveUsersCtx, 'Daily active users in the past 30 days', 'bar', dailyActiveUsers, true);
         };
     </script>
 }

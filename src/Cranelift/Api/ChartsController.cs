@@ -45,6 +45,8 @@ namespace Cranelift.Api
             _dbContext = dbContext;
         }
 
+        private const string Blue = "#36A2EB";
+
         [HttpGet("jobs")]
         public async Task<Chart> GetJobCount(int days = 7)
         {
@@ -95,8 +97,8 @@ order by created_date desc";
             }
         }
 
-        [HttpGet("users")]
-        public async Task<Chart> GetUserCount(int days = 7)
+        [HttpGet("daily-sign-ups")]
+        public async Task<Chart> GetSignUpsCount(int days = 7)
         {
             var sql = @$"select created_date, count(*) as count from (
 SELECT cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from user
@@ -114,7 +116,42 @@ order by created_date desc";
                 {
                     Label = "Sign Ups",
                     Data = items.Select(i => (double)i.Count).ToList(),
-                    BackgroundColor = "#36A2EB"
+                    BackgroundColor = Blue,
+                };
+
+                return new Chart
+                {
+                    Datasets = new List<Dataset> { dataset },
+                    Labels = items.Select(i => i.CreatedDate.ToString("MM/dd")).ToArray()
+                };
+            }
+        }
+
+        [HttpGet("daily-active-users")]
+        public async Task<Chart> GetActiveDailyActiveUsers(int days = 7)
+        {
+            var sql = $@"select created_date, count(*) as count from (
+
+select user_id, created_date, count(*) as count from (
+SELECT user_id, cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from job
+) days
+where DATEDIFF(UTC_TIMESTAMP(), created_date) <= {days}
+group by created_date, user_id 
+
+) a
+group by created_date
+order by created_date desc";
+
+            using (var connection = await _dbContext.OpenOcrConnectionAsync())
+            {
+                var items = await connection.QueryAsync<DayChartQuery>(sql);
+                items = items.OrderBy(i => i.CreatedDate).ToArray();
+
+                var dataset = new Dataset
+                {
+                    Label = "Active Users",
+                    Data = items.Select(i => (double)i.Count).ToList(),
+                    BackgroundColor = Blue
                 };
 
                 return new Chart
