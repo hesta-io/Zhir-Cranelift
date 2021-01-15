@@ -212,6 +212,7 @@ namespace Cranelift.Jobs
                             CreatedBy = job.UserId,
                             PaymentMediumId = UserTransaction.PaymentMediums.ZhirBalance,
                             TypeId = UserTransaction.Types.OcrJob,
+                            Confirmed = true,
                         });
                     }
 

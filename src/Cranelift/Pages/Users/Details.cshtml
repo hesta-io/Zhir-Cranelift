@@ -136,6 +136,7 @@
             <th scope="col">User Note</th>
             <th scope="col">Admin Note</th>
             <th scope="col">Date</th>
+            <th scope="col">Confirmed</th>
         </tr>
     </thead>
     <tbody>
@@ -154,6 +155,7 @@
             <td>@transaction.UserNote</td>
             <td>@transaction.AdminNote</td>
             <td>@transaction.Date.ToString("yyyy-MM-dd hh:mm tt UTCzz")</td>
+            <td>@(transaction.Confirmed == true ? "Yes" : "No")</td>
         </tr>
         }
     </tbody>

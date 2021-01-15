@@ -42,6 +42,7 @@ namespace Cranelift.Helpers
             public string PaymentMediumCode { get; set; }
             public string UserNote { get; set; }
             public string AdminNote { get; set; }
+            public bool? Confirmed { get; set; }
             public string Type { get; set; }
             public DateTime Date { get; set; }
         }
@@ -59,7 +60,7 @@ namespace Cranelift.Helpers
         {
             var condition = userId is null ? "" : $"where ut.user_id = {userId}";
 
-            var sql = $@"select ut.id, ut.amount, pm.name as PaymentMedium, pm.code as PaymentMediumCode, tt.name as Type, ut.transaction_id, ut.created_at as Date, ut.user_note, ut.admin_note, ut.page_count from user_transaction ut
+            var sql = $@"select ut.id, ut.amount, ut.confirmed, pm.name as PaymentMedium, pm.code as PaymentMediumCode, tt.name as Type, ut.transaction_id, ut.created_at as Date, ut.user_note, ut.admin_note, ut.page_count from user_transaction ut
 left join payment_medium pm on pm.id = ut.payment_medium_id 
 left join transaction_type tt on tt.id = ut.type_id
 {condition}
@@ -69,8 +70,8 @@ order by ut.created_at desc";
         }
 
         private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at, verified, is_admin,
-		(select sum(page_count) from user_transaction ut where ut.user_id = u.id) as balance,
-		(select sum(amount) from user_transaction ut where ut.user_id = u.id) as money_spent,
+		(select sum(page_count) from user_transaction ut where ut.user_id = u.id and ut.confirmed = 1) as balance,
+		(select sum(amount) from user_transaction ut where ut.user_id = u.id and ut.confirmed = 1) as money_spent,
 		(select sum(page_count) from job j2 where j2.user_id = u.id) as count_pages,
 		(select count(id) from job j2 where j2.user_id = u.id) as count_jobs
 from `user` u";
@@ -142,8 +143,8 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
 
             using var command = connection.CreateCommand();
             command.CommandText = $@"INSERT INTO user_transaction
-(user_id, type_id, payment_medium_id, amount, page_count, user_note, admin_note, transaction_id, created_at, created_by)
-VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount ?? 0}', '{transaction.PageCount}', @userNote, @adminNote, @transactionId, @createdAt, '{transaction.CreatedBy}');
+(user_id, type_id, payment_medium_id, amount, page_count, user_note, admin_note, transaction_id, created_at, created_by, confirmed)
+VALUES('{transaction.UserId}', '{transaction.TypeId}', '{transaction.PaymentMediumId}', '{transaction.Amount ?? 0}', '{transaction.PageCount}', @userNote, @adminNote, @transactionId, @createdAt, '{transaction.CreatedBy}', {(transaction.Confirmed == true ? 1 : 0)});
 ";
 
             command.AddParameterWithValue("transactionId", transaction.TransactionId);

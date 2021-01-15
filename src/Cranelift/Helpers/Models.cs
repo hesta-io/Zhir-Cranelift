@@ -41,6 +41,7 @@ namespace Cranelift.Helpers
         public string TransactionId { get; set; }
         public int CreatedBy { get; set; }
         public string UserNote { get; set; }
+        public bool? Confirmed { get; set; }
         public string AdminNote { get; set; }
     }
 

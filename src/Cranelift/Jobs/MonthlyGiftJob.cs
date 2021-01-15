@@ -54,6 +54,7 @@ namespace Cranelift.Jobs
                     TypeId = UserTransaction.Types.Recharge, // Should we make a dedicated transaction type for this?
                     CreatedAt = DateTime.UtcNow,
                     PageCount = _billingOptions.FreeMonthlyPages - (int)user.Balance,
+                    Confirmed = true,
                 };
 
                 await connection.InsertTransactionAsync(ut);

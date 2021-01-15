@@ -88,6 +88,7 @@ namespace Cranelift.Jobs
                     CreatedAt = DateTime.UtcNow,
                     TransactionId = fpTransaction.Id.ToString(),
                     TypeId = UserTransaction.Types.Recharge,
+                    Confirmed = true,
                 };
 
                 context.WriteLine($"Inserted transaction {fpTransaction.Id}");

@@ -103,7 +103,8 @@ namespace Cranelift.Pages.Users
                     PageCount = PageCount,
                     UserId = Id,
                     UserNote = UserNote,
-                    AdminNote = AdminNote
+                    AdminNote = AdminNote,
+                    Confirmed = true,
                 };
 
                 var connection = await _dbContext.OpenOcrConnectionAsync();
