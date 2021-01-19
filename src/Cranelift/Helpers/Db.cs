@@ -105,8 +105,8 @@ from `user` u";
         public static async Task InsertPageAsync(this DbConnection connection, Page page)
         {
             var sql = $@"INSERT INTO page
-(id, name, user_id, job_id, started_processing_at, processed, finished_processing_at, succeeded, `result`, deleted, created_at, created_by)
-VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succeeded, @result, @deleted, @createdAt, @createdBy);
+(id, name, user_id, job_id, started_processing_at, processed, finished_processing_at, succeeded, `result`, deleted, created_at, created_by, is_free)
+VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succeeded, @result, @deleted, @createdAt, @createdBy, @isFree);
 ";
 
             using var command = connection.CreateCommand();
@@ -124,6 +124,7 @@ VALUES(@id, @name, @userId, @jobId , @startedAt, @processed, @finishedAt, @succe
             command.AddParameterWithValue("deleted", page.Deleted);
             command.AddParameterWithValue("createdAt", page.CreatedAt);
             command.AddParameterWithValue("createdBy", page.CreatedBy);
+            command.AddParameterWithValue("isFree", page.IsFree);
 
             await command.ExecuteNonQueryAsync();
         }

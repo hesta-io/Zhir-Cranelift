@@ -109,6 +109,7 @@ namespace Cranelift.Helpers
         public string Result { get; set; }
         public bool Deleted { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsFree { get; set; }
         public int CreatedBy { get; set; }
         public string FullPath { get; set; }
         public string HocrResult { get; set; }

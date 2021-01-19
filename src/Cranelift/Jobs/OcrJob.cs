@@ -143,8 +143,11 @@ namespace Cranelift.Jobs
                         }
                         else
                         {
+                            const int minimumNumberOfWordsPerPage = 50;
                             foreach (var page in chunk)
                             {
+                                page.IsFree = page.Result.CountWords() < minimumNumberOfWordsPerPage;
+                                page.Processed = true;
                                 await connection.InsertPageAsync(page);
                             }
 
@@ -200,8 +203,7 @@ namespace Cranelift.Jobs
                         // TODO: Update balance?
                         job.Status = ModelConstants.Completed;
 
-                        const int minimumNumberOfWordsPerPage = 50;
-                        job.PaidPageCount = pages.Count(p => p.Result.CountWords() >= minimumNumberOfWordsPerPage);
+                        job.PaidPageCount = pages.Count(p => p.IsFree == false);
 
                         context.WriteLine("Charging for the job...");
                         await connection.InsertTransactionAsync(new UserTransaction
