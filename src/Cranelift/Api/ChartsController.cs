@@ -17,6 +17,7 @@ namespace Cranelift.Api
         public bool Fill { get; set; }
         public string Label { get; set; }
         public string BackgroundColor { get; set; }
+        public string BorderColor { get; set; }
         public List<double> Data { get; set; }
     }
 
@@ -31,6 +32,7 @@ namespace Cranelift.Api
         public string Status { get; set; }
         public DateTime CreatedDate { get; set; }
         public int Count { get; set; }
+        public int Count2 { get; set; }
     }
 
     [Authorize]
@@ -80,6 +82,7 @@ order by created_date desc";
                 {
                     Label = s.Key,
                     BackgroundColor = s.Key == "completed" ? "#4BC0C0" : "#FF6384",
+                    BorderColor = s.Key == "completed" ? "#4BC0C0" : "#FF6384",
                     Data = new List<double>()
                 }).ToDictionary(d => d.Label);
 
@@ -104,6 +107,63 @@ order by created_date desc";
                 {
                     Datasets = datasets.Select(i => i.Value),
                     Labels = dates.Select(d => months ? d.ToString("MMM yyyy") : d.ToString("MM/dd")).ToArray()
+                };
+            }
+        }
+
+
+        [HttpGet("pages")]
+        public async Task<Chart> GetDailyPages(int days = 7)
+        {
+            var allPagesCount = @$"select status, created_date, sum(page_count) as count, sum(paid_page_count) as count2 from (
+SELECT status, page_count, paid_page_count, cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from job
+) days
+where status in ('completed') and DATEDIFF(UTC_TIMESTAMP(), created_date) <= {days}
+group by created_date
+order by created_date desc";
+
+            using (var connection = await _dbContext.OpenOcrConnectionAsync())
+            {
+                var items = await connection.QueryAsync<DayChartQuery>(allPagesCount);
+                items = items.OrderBy(i => i.CreatedDate).ToArray();
+
+                var months = false;
+
+                if (days >= 60)
+                {
+                    items = items.GroupBy(i => i.CreatedDate.Month)
+                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1), Count2 = g.Sum(i => i.Count2) })
+                                 .OrderBy(i => i.CreatedDate).ToArray();
+
+                    months = true;
+                }
+
+                var paidPagesDataset = new Dataset
+                {
+                    Label = "Paid",
+                    BackgroundColor = "#4BC0C0",
+                    BorderColor = "#4BC0C0",
+                    Data = new List<double>()
+                };
+
+                var freePagesDataset = new Dataset
+                {
+                    Label = "Free",
+                    BackgroundColor = "#FF6384",
+                    BorderColor = "#FF6384",
+                    Data = new List<double>()
+                };
+
+                foreach (var item in items)
+                {
+                    paidPagesDataset.Data.Add(item.Count2);
+                    freePagesDataset.Data.Add(item.Count - item.Count2);
+                }
+
+                return new Chart
+                {
+                    Datasets = new List<Dataset> { paidPagesDataset, freePagesDataset },
+                    Labels = items.Select(d => months ? d.CreatedDate.ToString("MMM yyyy") : d.CreatedDate.ToString("MM/dd")).ToArray()
                 };
             }
         }
@@ -160,6 +220,7 @@ order by created_date desc";
                     Label = "Sign Ups",
                     Data = new List<double>(),
                     BackgroundColor = Blue,
+                    BorderColor = Blue,
                 };
 
                 var activeUsersDataset = new Dataset
@@ -167,6 +228,7 @@ order by created_date desc";
                     Label = "Active Users",
                     Data = new List<double>(),
                     BackgroundColor = "#800080",
+                    BorderColor = "#800080",
                 };
 
                 var allDates = signUps.Select(s => s.CreatedDate).Union(activeUsers.Select(u => u.CreatedDate)).OrderBy(i => i).ToHashSet();
@@ -193,6 +255,7 @@ order by created_date desc";
                 };
             }
         }
+
 
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats(int days = 7)
@@ -230,6 +293,41 @@ where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
                     totalJobs,
                     averageProcessingTimePerPage
                 });
+            }
+        }
+
+        [HttpGet("cumulative-users")]
+        public async Task<Chart> GetCumulativeUsers(int days = 7)
+        {
+            var signUpsSql = @$"with signUps as (
+	select created_date, count(*) as count from (
+		SELECT cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from user
+	) days
+	group by created_date
+)
+
+select created_date, sum(count) over (order by created_date) as count
+from signUps;";
+
+            using (var connection = await _dbContext.OpenOcrConnectionAsync())
+            {
+                var cumulativeUsers = await connection.QueryAsync<DayChartQuery>(signUpsSql);
+                cumulativeUsers = cumulativeUsers.Where(i => (DateTime.UtcNow - i.CreatedDate).TotalDays < days)
+                                 .OrderBy(i => i.CreatedDate).ToArray();
+
+                var dataset = new Dataset
+                {
+                    Label = "User growth",
+                    Data = cumulativeUsers.Select(s => (double)s.Count).ToList(),
+                    BackgroundColor = Blue,
+                    BorderColor = Blue,
+                };
+
+                return new Chart
+                {
+                    Datasets = new List<Dataset> { dataset },
+                    Labels = cumulativeUsers.Select(i => i.CreatedDate.ToString("MM/dd")).ToArray()
+                };
             }
         }
 
