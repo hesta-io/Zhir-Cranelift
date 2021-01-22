@@ -15,6 +15,7 @@
             <th scope="col">Balance</th>
             <th scope="col">Money Spent</th>
             <th scope="col">Verified?</th>
+            <th scope="col">Registered At</th>
             <th scope="col">Details</th>
         </tr>
     </thead>
@@ -32,6 +33,7 @@
             <td>@user.Balance.ToString("N0")</td>
             <td>@user.MoneySpent.ToString("N0")</td>
             <td>@(user.Verified == true ? "Yes" : "No")</td>
+            <td>@user.CreatedAt.ToString("yyyy-MM-dd")</td>
             <td><a class="btn btn-primary" asp-page="./Details" asp-route-id="@user.Id">Details</a></td>
         </tr>
         }
