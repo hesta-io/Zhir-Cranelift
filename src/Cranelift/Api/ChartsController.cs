@@ -62,6 +62,17 @@ order by created_date desc";
                 var items = await connection.QueryAsync<DayChartQuery>(sql);
                 items = items.OrderBy(i => i.CreatedDate).ToArray();
 
+                var months = false;
+
+                if (days >= 60)
+                {
+                    items = items.GroupBy(i => new Tuple<int, string>(i.CreatedDate.Month, i.Status))
+                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key.Item1, 1), Status = g.Key.Item2 })
+                                 .OrderBy(i => i.CreatedDate).ToArray();
+
+                    months = true;
+                }
+
                 var dates = items.Select(i => i.CreatedDate).Distinct().ToHashSet();
 
                 var statuses = items.GroupBy(i => i.Status).OrderBy(i => i.Key).ToDictionary(i => i.Key, i => i.ToList());
@@ -92,7 +103,7 @@ order by created_date desc";
                 return new Chart
                 {
                     Datasets = datasets.Select(i => i.Value),
-                    Labels = dates.Select(d => d.ToString("MM/dd")).ToArray()
+                    Labels = dates.Select(d => months ? d.ToString("MMM yyyy") : d.ToString("MM/dd")).ToArray()
                 };
             }
         }
@@ -122,10 +133,27 @@ order by created_date desc";
             using (var connection = await _dbContext.OpenOcrConnectionAsync())
             {
                 var signUps = await connection.QueryAsync<DayChartQuery>(signUpsSql);
-                signUps = signUps.OrderBy(i => i.CreatedDate).ToArray();
-
                 var activeUsers = await connection.QueryAsync<DayChartQuery>(activeUsersSql);
-                activeUsers = activeUsers.OrderBy(i => i.CreatedDate).ToArray();
+
+                var months = false;
+
+                if (days < 60)
+                {
+                    signUps = signUps.OrderBy(i => i.CreatedDate).ToArray();
+                    activeUsers = activeUsers.OrderBy(i => i.CreatedDate).ToArray();
+                }
+                else
+                {
+                    signUps = signUps.GroupBy(i => i.CreatedDate.Month)
+                        .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1) })
+                        .OrderBy(i => i.CreatedDate).ToArray();
+
+                    activeUsers = activeUsers.GroupBy(i => i.CreatedDate.Month)
+                       .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1) })
+                       .OrderBy(i => i.CreatedDate).ToArray();
+
+                    months = true;
+                }
 
                 var signUpsDataset = new Dataset
                 {
@@ -161,45 +189,10 @@ order by created_date desc";
                 return new Chart
                 {
                     Datasets = new List<Dataset> { signUpsDataset, activeUsersDataset },
-                    Labels = allDates.Select(i => i.ToString("MM/dd")).ToArray()
+                    Labels = allDates.Select(i => months ? i.ToString("MMM yyyy") : i.ToString("MM/dd")).ToArray()
                 };
             }
         }
-
-//        [HttpGet("daily-active-users")]
-//        public async Task<Chart> GetActiveDailyActiveUsers(int days = 7)
-//        {
-//            var sql = $@"select created_date, count(*) as count from (
-
-//select user_id, created_date, count(*) as count from (
-//SELECT user_id, cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from job
-//) days
-//where DATEDIFF(UTC_TIMESTAMP(), created_date) <= {days}
-//group by created_date, user_id 
-
-//) a
-//group by created_date
-//order by created_date desc";
-
-//            using (var connection = await _dbContext.OpenOcrConnectionAsync())
-//            {
-//                var items = await connection.QueryAsync<DayChartQuery>(sql);
-//                items = items.OrderBy(i => i.CreatedDate).ToArray();
-
-//                var dataset = new Dataset
-//                {
-//                    Label = "Active Users",
-//                    Data = items.Select(i => (double)i.Count).ToList(),
-//                    BackgroundColor = Blue
-//                };
-
-//                return new Chart
-//                {
-//                    Datasets = new List<Dataset> { dataset },
-//                    Labels = items.Select(i => i.CreatedDate.ToString("MM/dd")).ToArray()
-//                };
-//            }
-//        }
 
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats(int days = 7)
@@ -219,7 +212,7 @@ where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
                 var newUsers = await connection.ExecuteScalarAsync<int>($"select count(*) from user where datediff(UTC_TIMESTAMP(), created_at) < {days}");
                 var verifiedUsers = await connection.ExecuteScalarAsync<int>($"select count(*) from user where verified = true");
 
-                var jobs = await connection.QueryAsync<string>("select status from job");
+                var jobs = await connection.QueryAsync<string>($"select status from job where datediff(UTC_TIMESTAMP(), created_at) < {days}");
                 var completedJobs = jobs.Count(s => s == "completed");
                 var failedJobs = jobs.Count(s => s == "failed");
                 var totalJobs = jobs.Count();
