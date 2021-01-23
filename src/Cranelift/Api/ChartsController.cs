@@ -265,7 +265,7 @@ select id, name, (select job.created_at from job where job.user_id = user.id ORD
 ) a
 where datediff(UTC_TIMESTAMP(), last_job) < {days}";
 
-            var averageProcessingTimeSql = @$"select (finished_at - processed_at) / page_count from job
+            var averageProcessingTimeSql = @$"select AVG((finished_at - processed_at) / page_count) from job
 where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
 
             using (var connection = await _dbContext.OpenOcrConnectionAsync())
