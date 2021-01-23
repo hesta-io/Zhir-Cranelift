@@ -35,6 +35,13 @@ namespace Cranelift.Api
         public int Count2 { get; set; }
     }
 
+    public class HeatMapElement
+    {
+        public int DayofWeek { get; set; }
+        public int Hour { get; set; }
+        public int Value { get; set; }
+    }
+
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
@@ -48,6 +55,38 @@ namespace Cranelift.Api
         }
 
         private const string Blue = "#36A2EB";
+
+
+        [HttpGet("activity-heatmap")]
+        public async Task<List<List<int>>> GetActivityHeatMap(int days = 7)
+        {
+            var sql = @$"select dayofweek(created_at) as day_of_week, hour(created_at) as hour, count(*) as value from (
+	select created_at from job where DATEDIFF(UTC_TIMESTAMP(), created_at) <= {days}
+) d
+group by day_of_week, hour
+order by day_of_week, hour";
+
+            using (var connection = await _dbContext.OpenOcrConnectionAsync())
+            {
+                var items = await connection.QueryAsync<HeatMapElement>(sql);
+                var list = new List<List<int>>();
+
+                for (int i = 1; i < 7; i++) // 1 = Sunday, 7 = Saturday
+                {
+                    var hours = items.Where(x => x.DayofWeek == i).ToDictionary(x => x.Hour, x => x.Value);
+                    var values = new List<int>();
+                    list.Add(values);
+
+                    for (int h = 0; h < 24; h ++)
+                    {
+                        hours.TryGetValue(h, out var value);
+                        values.Add(value);
+                    }
+                }
+
+                return list;
+            }
+        }
 
         [HttpGet("jobs")]
         public async Task<Chart> GetDailyJobs(int days = 7)
