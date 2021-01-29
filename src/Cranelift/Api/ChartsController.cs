@@ -71,7 +71,7 @@ order by day_of_week, hour";
                 var items = await connection.QueryAsync<HeatMapElement>(sql);
                 var list = new List<List<int>>();
 
-                for (int i = 1; i < 7; i++) // 1 = Sunday, 7 = Saturday
+                for (int i = 1; i <= 7; i++) // 1 = Sunday, 7 = Saturday
                 {
                     var hours = items.Where(x => x.DayofWeek == i).ToDictionary(x => x.Hour, x => x.Value);
                     var values = new List<int>();

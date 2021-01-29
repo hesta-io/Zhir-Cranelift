@@ -177,6 +177,10 @@
             var options = {
                 series: [
                     {
+                        name: 'Saturday',
+                        data: heatmapData[6]
+                    },
+                    {
                         name: 'Sunday',
                         data: heatmapData[0]
                     },
@@ -200,11 +204,7 @@
                         name: 'Friday',
                         data: heatmapData[5]
                     },
-                    {
-                        name: 'Saturday',
-                        data: heatmapData[6]
-                    },
-                ],
+                ].reverse(),
                 chart: {
                     height: 250,
                     type: 'heatmap',
