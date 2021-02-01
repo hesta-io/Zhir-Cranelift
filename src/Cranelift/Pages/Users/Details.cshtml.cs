@@ -51,7 +51,7 @@ namespace Cranelift.Pages.Users
         public bool Verified { get; set; }
 
         [BindProperty]
-        public bool? CanUseAPI { get; set; }
+        public bool CanUseAPI { get; set; }
 
         [BindProperty]
         public string APIKey { get; set; }
@@ -76,7 +76,7 @@ namespace Cranelift.Pages.Users
             Data = await connection.GetUserAsync(id);
             Verified = Data.Verified == true;
             MonthlyRecharge = Data.MonthlyRecharge ?? 0;
-            CanUseAPI = Data.CanUseAPI;
+            CanUseAPI = Data.CanUseAPI ?? false;
             APIKey = Data.APIKey;
 
             var transactions = await connection.GetTransactionsAsync(id);
