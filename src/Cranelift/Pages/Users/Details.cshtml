@@ -68,6 +68,27 @@
         </div>
     </div>
 
+    <div class="row mb-2">
+        <label asp-for="CanUseAPI" class="col-sm-4 col-form-label">Can use API</label>
+        <div class="col-sm-6">
+            <input asp-for="CanUseAPI" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <label asp-for="APIKey" class="col-sm-4 col-form-label">API Key</label>
+        <div class="col-sm-6">
+            <input asp-for="APIKey" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <label asp-for="MonthlyRecharge" class="col-sm-4 col-form-label">Monthly Recharge</label>
+        <div class="col-sm-6">
+            <input asp-for="MonthlyRecharge" class="form-control" />
+        </div>
+    </div>
+
     <input asp-for="Id" type="hidden" />
 
     <button type="submit" asp-page-handler="User" class="btn btn-primary">Update User Info</button>

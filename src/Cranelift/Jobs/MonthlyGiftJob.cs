@@ -36,7 +36,7 @@ namespace Cranelift.Jobs
             using var transaction = await connection.BeginTransactionAsync(performContext.CancellationToken.ShutdownToken);
 
             var users = await connection.GetUsersAsync();
-            var eligibleUsers = users.Where(u => u.Balance < _billingOptions.FreeMonthlyPages).ToArray();
+            var eligibleUsers = users.Where(u => u.MonthlyRecharge.HasValue && u.Balance < u.MonthlyRecharge).ToArray();
 
             performContext.WriteLine($"There are {eligibleUsers.Length:N0} eligible users.");
 
@@ -48,12 +48,12 @@ namespace Cranelift.Jobs
                 {
                     UserId = user.Id,
                     Amount = 0,
-                    UserNote = "دیاری :)",
-                    AdminNote = "Monthly free pages",
+                    UserNote = "پڕکردنەوەی باڵانسی مانگانە",
+                    AdminNote = "Monthly recharge",
                     PaymentMediumId = UserTransaction.PaymentMediums.Zhir,
                     TypeId = UserTransaction.Types.Recharge, // Should we make a dedicated transaction type for this?
                     CreatedAt = DateTime.UtcNow,
-                    PageCount = _billingOptions.FreeMonthlyPages - (int)user.Balance,
+                    PageCount = user.MonthlyRecharge.Value - (int)user.Balance,
                     Confirmed = true,
                 };
 

@@ -49,9 +49,11 @@ namespace Cranelift.Helpers
 
         public static async Task UpdateUserAsync(this DbConnection connection, User user)
         {
-            var sql = $"UPDATE `user` SET verified = {(user.Verified == true ? 1 : 0)} WHERE id = '{user.Id}'";
+            var sql = $"UPDATE `user` SET verified = {(user.Verified == true ? 1 : 0)}, can_use_api = {(user.CanUseAPI == true ? 1 : 0)}, monthly_recharge = {user.MonthlyRecharge ?? 0}, api_key = @apiKey WHERE id = '{user.Id}'";
             using var command = connection.CreateCommand();
             command.CommandText = sql;
+
+            command.AddParameterWithValue("apiKey", user.APIKey);
 
             await command.ExecuteNonQueryAsync();
         }
@@ -69,7 +71,7 @@ order by ut.created_at desc";
             return await connection.QueryAsync<TranactionViewModel>(sql);
         }
 
-        private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at, verified, is_admin,
+        private const string UserQuery = @"select id, name, company_name, email, phone_no, deleted, created_at, verified, is_admin, can_use_api, api_key, monthly_recharge,
 		(select sum(page_count) from user_transaction ut where ut.user_id = u.id and ut.confirmed = 1) as balance,
 		(select sum(amount) from user_transaction ut where ut.user_id = u.id and ut.confirmed = 1) as money_spent,
 		(select sum(page_count) from job j2 where j2.user_id = u.id) as count_pages,

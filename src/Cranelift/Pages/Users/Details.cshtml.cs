@@ -50,6 +50,15 @@ namespace Cranelift.Pages.Users
         [BindProperty]
         public bool Verified { get; set; }
 
+        [BindProperty]
+        public bool? CanUseAPI { get; set; }
+
+        [BindProperty]
+        public string APIKey { get; set; }
+
+        [BindProperty]
+        public int MonthlyRecharge { get; set; }
+
         public User Data { get; set; }
 
         public List<Queries.TranactionViewModel> Transactions { get; set; }
@@ -66,6 +75,10 @@ namespace Cranelift.Pages.Users
             using var connection = await _dbContext.OpenOcrConnectionAsync();
             Data = await connection.GetUserAsync(id);
             Verified = Data.Verified == true;
+            MonthlyRecharge = Data.MonthlyRecharge ?? 0;
+            CanUseAPI = Data.CanUseAPI;
+            APIKey = Data.APIKey;
+
             var transactions = await connection.GetTransactionsAsync(id);
             Transactions = transactions.ToList();
         }
@@ -77,6 +90,10 @@ namespace Cranelift.Pages.Users
                 using var connection = await _dbContext.OpenOcrConnectionAsync();
                 var user = await connection.GetUserAsync(Id);
                 user.Verified = Verified;
+                user.MonthlyRecharge = MonthlyRecharge;
+                user.CanUseAPI = CanUseAPI;
+                user.APIKey = APIKey;
+
                 await connection.UpdateUserAsync(user);
             }
 

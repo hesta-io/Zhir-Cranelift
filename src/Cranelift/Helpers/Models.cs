@@ -58,6 +58,10 @@ namespace Cranelift.Helpers
         public bool? Verified { get; set; }
         public bool? IsAdmin { get; set; }
 
+        public bool? CanUseAPI { get; set; }
+        public string APIKey { get; set; }
+        public int? MonthlyRecharge { get; set; }
+
         public int CountJobs { get; set; }
         public int CountPages { get; set; }
         public decimal MoneySpent { get; set; }
