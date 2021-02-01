@@ -86,6 +86,9 @@ namespace Cranelift.Helpers
         public DateTime CreatedAt { get; set; }
         public int CreatedBy { get; set; }
 
+        public bool? FromAPI { get; set; }
+        public string Callback { get; set; }
+
         public string[] GetLanguages()
         {
             if (string.IsNullOrWhiteSpace(Lang))
