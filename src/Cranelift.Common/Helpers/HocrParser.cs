@@ -181,7 +181,7 @@ namespace Cranelift.Common.Helpers
                 return dict;
             }
 
-            var parts = title.Split(";");
+            var parts = title.Split(';');
 
             foreach (var p in parts)
             {

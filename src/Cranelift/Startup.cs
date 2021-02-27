@@ -14,6 +14,9 @@ using Cranelift.Services;
 using Hangfire.Console;
 using Cranelift.Jobs;
 using System.Net;
+using Cranelift.Common.Abstractions;
+using Cranelift.Common.Helpers;
+using Cranelift.Common;
 
 namespace Cranelift
 {

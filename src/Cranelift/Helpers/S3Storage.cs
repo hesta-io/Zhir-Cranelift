@@ -1,6 +1,9 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 
+using Cranelift.Common;
+using Cranelift.Common.Abstractions;
+
 using Microsoft.Extensions.Configuration;
 
 using System;

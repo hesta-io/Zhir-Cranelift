@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Cranelift.Common\Cranelift.Common.csproj" />
+    <ProjectReference Include="..\Cranelift.Common\Cranelift.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

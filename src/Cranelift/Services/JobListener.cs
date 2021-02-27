@@ -1,4 +1,5 @@
-﻿using Cranelift.Common.Models;
+﻿using Cranelift.Common;
+using Cranelift.Common.Models;
 using Cranelift.Helpers;
 using Cranelift.Jobs;
 
