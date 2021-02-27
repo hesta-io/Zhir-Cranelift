@@ -63,7 +63,6 @@ namespace Cranelift.Jobs
             public bool Success { get; set; }
         }
 
-        private readonly IDbContext _dbContext;
         private readonly IStorage _storage;
         private readonly IJobStorage _jobStorage;
         private readonly IWebHostEnvironment _environment;
@@ -83,7 +82,6 @@ namespace Cranelift.Jobs
             DocumentHelper pdfHelper,
             IHttpClientFactory httpClientFactory)
         {
-            _dbContext = dbContext;
             _storage = storage;
             _jobStorage = jobStorage;
             this._environment = _environment;
