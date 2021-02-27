@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebDemo", "src\WebDemo\WebD
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cranelift", "src\Cranelift\Cranelift.csproj", "{17D4A1EF-8CE2-49BC-B676-5F6A74F8CFEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebhookTest", "src\WebhookTest\WebhookTest.csproj", "{181A5309-1051-4758-91DA-BADF7529B160}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebhookTest", "src\WebhookTest\WebhookTest.csproj", "{181A5309-1051-4758-91DA-BADF7529B160}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FabricJSParser", "src\FabricJSParser\FabricJSParser.csproj", "{094B189D-1B77-4445-A9D3-D7137AEA8F56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,14 @@ Global
 		{181A5309-1051-4758-91DA-BADF7529B160}.Release|Any CPU.Build.0 = Release|Any CPU
 		{181A5309-1051-4758-91DA-BADF7529B160}.Release|x64.ActiveCfg = Release|Any CPU
 		{181A5309-1051-4758-91DA-BADF7529B160}.Release|x64.Build.0 = Release|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Debug|x64.Build.0 = Debug|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Release|x64.ActiveCfg = Release|Any CPU
+		{094B189D-1B77-4445-A9D3-D7137AEA8F56}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

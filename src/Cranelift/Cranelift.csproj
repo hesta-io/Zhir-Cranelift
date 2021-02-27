@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FabricJSParser\FabricJSParser.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Dependencies\models\ara.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -14,6 +14,9 @@ namespace Cranelift.Helpers
     {
         public Stream CreateWordDocument(IEnumerable<HocrPage> pages)
         {
+            var json = File.ReadAllText("tables.json");
+            var table = FabricJSParser.FabricJSParser.Parse(json).First();
+
             var stream = new MemoryStream();
 
             using (WordprocessingDocument wordDocument =
@@ -123,14 +126,14 @@ namespace Cranelift.Helpers
             return stream;
         }
 
-        private static uint ToTwips(double v)
+        private static uint ToTwips(double inches)
         {
             // 1 inch = 72 points
             const int PointsInInch = 72;
             // 1 point = 20 twips
             const int TwipsInPoint = 20;
 
-            return (uint)(v * PointsInInch * TwipsInPoint);
+            return (uint)(inches * PointsInInch * TwipsInPoint);
         }
 
         public byte[] MergePages(IReadOnlyList<byte[]> files)
