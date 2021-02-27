@@ -1,4 +1,4 @@
-﻿namespace Cranelift.Helpers
+﻿namespace Cranelift.Common
 {
     public static class Constants
     {

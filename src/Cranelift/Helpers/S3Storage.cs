@@ -11,57 +11,7 @@ using System.Threading.Tasks;
 
 namespace Cranelift.Helpers
 {
-    public class StorageOptions
-    {
-        public string HostName { get; set; }
-        public string AccessKey { get; set; }
-        public string Secret { get; set; }
-        public string BucketName { get; set; }
-    }
-
-    public static class StorageExtensions
-    {
-        public static async Task DownloadBlobs(this IStorage storage, string prefix, string directory, System.Threading.CancellationToken cancellationToken)
-        {
-            await storage.DownloadBlobs(prefix, key =>
-            {
-                var path = Path.Combine(directory, key);
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                return File.OpenWrite(path);
-            }, cancellationToken);
-        }
-
-        public static async Task<bool> UploadBlob(
-            this IStorage storage, 
-            string key, 
-            string filePath, 
-            string contentType = null,
-            CancellationToken cancellationToken = default)
-        {
-            if (contentType is null)
-            {
-                if (filePath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
-                {
-                    contentType = "image/jpeg";
-                }
-                else if (filePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-                {
-                    contentType = "image/png";
-                }
-            }
-
-            using var stream = File.OpenRead(filePath);
-            return await storage.UploadBlob(key, stream, contentType, cancellationToken);
-        }
-    }
-
-    public interface IStorage
-    {
-        Task DownloadBlobs(string prefix, Func<string, Stream> getDestinationStream, CancellationToken cancellationToken);
-        Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken);
-    }
-
-    public class S3Storage : IStorage
+    public class S3Storage : IBlobStorage
     {
         private StorageOptions _options;
         private AmazonS3Client _client;
