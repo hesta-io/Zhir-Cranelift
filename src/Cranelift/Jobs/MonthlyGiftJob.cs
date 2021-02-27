@@ -1,4 +1,5 @@
 ﻿using Cranelift.Helpers;
+using Cranelift.Common.Models;
 
 using Hangfire.Console;
 using Hangfire.Server;
