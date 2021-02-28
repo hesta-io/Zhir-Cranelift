@@ -117,9 +117,8 @@ namespace Cranelift.Common.Helpers
                 }
             }
 
-            //stream.Position = 0;
+            stream.Seek(0, SeekOrigin.Begin);
 
-            //return stream.ToArray();
             return stream;
         }
 

@@ -108,7 +108,11 @@ namespace Cranelift.ConsoleRunner
 
             var result = await pipeline.RunAsync(job, default);
 
-            Directory.Delete(tempFolder, recursive: true);
+            try
+            {
+                Directory.Delete(tempFolder, recursive: true);
+            }
+            catch (Exception) { }
 
             Console.WriteLine($"Result: {result.Status}");
         }
