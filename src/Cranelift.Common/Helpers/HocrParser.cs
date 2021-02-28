@@ -15,7 +15,7 @@ namespace Cranelift.Common.Helpers
         public string Language { get; set; }
         public List<HocrLine> Lines { get; set; }
         public TextDirection Direction { get; set; }
-        public HocrRect? BoundingBox { get; set; }
+        public Rect? BoundingBox { get; set; }
 
         public override string ToString() => string.Join("\n", Lines);
     }
@@ -28,15 +28,15 @@ namespace Cranelift.Common.Helpers
 
     public class HocrLine
     {
-        public HocrRect? BoundingBox { get; set; }
+        public Rect? BoundingBox { get; set; }
         public List<HocrWord> Words { get; set; }
 
         public override string ToString() => string.Join(" ", Words);
     }
 
-    public struct HocrPoint
+    public struct Point
     {
-        public HocrPoint(double x, double y)
+        public Point(double x, double y)
         {
             X = x;
             Y = y;
@@ -46,9 +46,9 @@ namespace Cranelift.Common.Helpers
         public double Y { get; }
     }
 
-    public struct HocrRect
+    public struct Rect
     {
-        public HocrRect(HocrPoint upperLeft, HocrPoint lowerRight)
+        public Rect(Point upperLeft, Point lowerRight)
         {
             UpperLeft = upperLeft;
             LowerRight = lowerRight;
@@ -60,8 +60,8 @@ namespace Cranelift.Common.Helpers
         public double Width => LowerRight.X - UpperLeft.X;
         public double Height => LowerRight.Y - UpperLeft.Y;
 
-        public HocrPoint UpperLeft { get; }
-        public HocrPoint LowerRight { get; }
+        public Point UpperLeft { get; }
+        public Point LowerRight { get; }
     }
 
     // https://en.wikipedia.org/wiki/HOCR
@@ -72,7 +72,7 @@ namespace Cranelift.Common.Helpers
         public string Text { get; set; }
         public double? FontSize { get; set; }
         public double? Confidence { get; set; }
-        public HocrRect? BoundingBox { get; set; }
+        public Rect? BoundingBox { get; set; }
 
         public override string ToString() => Text;
     }
@@ -97,7 +97,6 @@ namespace Cranelift.Common.Helpers
         public static HocrPage Parse(string hocr, bool predictSizes)
         {
             var document = XDocument.Parse(hocr);
-            var descs = document.Root.Descendants().ToArray();
             var page = document.Root.Descendants(Name("div")).FirstOrDefault(e => e.GetClass() == "ocr_page");
             if (page is null) return null;
 
@@ -161,7 +160,7 @@ namespace Cranelift.Common.Helpers
             return null;
         }
 
-        private static HocrRect? ParseBoundingBox(Dictionary<string, string> properties)
+        private static Rect? ParseBoundingBox(Dictionary<string, string> properties)
         {
             if (properties.TryGetValue("bbox", out var bbox))
             {
@@ -171,7 +170,7 @@ namespace Cranelift.Common.Helpers
                     double.TryParse(numbers[2], out var x1) &&
                     double.TryParse(numbers[3], out var y1))
                 {
-                    return new HocrRect(new HocrPoint(x0, y0), new HocrPoint(x1, y1));
+                    return new Rect(new Point(x0, y0), new Point(x1, y1));
                 }
             }
 

@@ -4,6 +4,7 @@ using Cranelift.Common.Helpers;
 using Cranelift.Common.Models;
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -58,6 +59,9 @@ namespace Cranelift.ConsoleRunner
     {
         public static async Task Main(string[] args)
         {
+            var xml = File.ReadAllText("assets/table.xml");
+            var tables = ICDAR19TableParser.ParseDocument(xml);
+
             if (args.Length < 2)
             {
                 Console.WriteLine("Usage: cranelift inputDir outputDir [langs]");
@@ -120,7 +124,7 @@ namespace Cranelift.ConsoleRunner
                     var imagePath = files[x];
 
                     var bitmap = (Bitmap)Image.FromFile(imagePath);
-                    bitmap = DrawBoxes(bitmap, hocrPage);
+                    bitmap = DrawBoxes(bitmap, hocrPage, tables);
 
                     var destinationImage = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(page.Name) + ".boxes.jpg");
                     bitmap.Save(destinationImage);
@@ -136,11 +140,14 @@ namespace Cranelift.ConsoleRunner
             Console.WriteLine($"Result: {result.Status}");
         }
 
-        private static Bitmap DrawBoxes(Bitmap bitmap, HocrPage hocrPage)
+        private static Bitmap DrawBoxes(Bitmap bitmap, HocrPage hocrPage, IEnumerable<ICDAR19Table> tables)
         {
             var paragraphPen = Pens.Red;
             var linePen = Pens.Green;
             var wordPen = Pens.Blue;
+
+            var tablePen = Pens.Purple;
+            var cellPen = Pens.Magenta;
 
             using (var graphics = Graphics.FromImage(bitmap))
             {
@@ -157,12 +164,22 @@ namespace Cranelift.ConsoleRunner
                         }
                     }
                 }
+
+                foreach (var table in tables)
+                {
+                    graphics.DrawRectangle(tablePen, ToRectangle(table.BoundingBox));
+
+                    foreach (var cell in table.Cells)
+                    {
+                        graphics.DrawRectangle(cellPen, ToRectangle(cell.BoundingBox));
+                    }
+                }
             }
 
             return bitmap;
         }
 
-        private static Rectangle ToRectangle(HocrRect hocrRect)
+        private static Rectangle ToRectangle(Rect hocrRect)
         {
             return new Rectangle((int)hocrRect.X, (int)hocrRect.Y, (int)hocrRect.Width, (int)hocrRect.Height);
         }
