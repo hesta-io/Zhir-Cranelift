@@ -24,6 +24,7 @@ namespace Cranelift.Common.Helpers
     {
         public List<HocrParagraph> Paragraphs { get; set; }
         public bool ShouldPredictSizes { get; set; }
+        public List<ICDAR19Table> Tables { get; set; }
     }
 
     public class HocrLine
@@ -62,6 +63,14 @@ namespace Cranelift.Common.Helpers
 
         public Point UpperLeft { get; }
         public Point LowerRight { get; }
+
+        public bool AlmostContains(Rect boundingBox)
+        {
+            return UpperLeft.X <= boundingBox.X &&
+                 UpperLeft.Y <= boundingBox.Y &&
+                 LowerRight.X >= boundingBox.X &&
+                 LowerRight.Y >= boundingBox.Y;
+        }
     }
 
     // https://en.wikipedia.org/wiki/HOCR
@@ -94,7 +103,7 @@ namespace Cranelift.Common.Helpers
             return XName.Get(element, "http://www.w3.org/1999/xhtml");
         }
 
-        public static HocrPage Parse(string hocr, bool predictSizes)
+        public static HocrPage Parse(string hocr, bool predictSizes, List<ICDAR19Table> tables)
         {
             var document = XDocument.Parse(hocr);
             var page = document.Root.Descendants(Name("div")).FirstOrDefault(e => e.GetClass() == "ocr_page");
@@ -109,7 +118,8 @@ namespace Cranelift.Common.Helpers
             return new HocrPage
             {
                 Paragraphs = paragraphs,
-                ShouldPredictSizes = predictSizes
+                ShouldPredictSizes = predictSizes,
+                Tables = tables
             };
         }
 

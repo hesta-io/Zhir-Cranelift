@@ -59,9 +59,6 @@ namespace Cranelift.ConsoleRunner
     {
         public static async Task Main(string[] args)
         {
-            var xml = File.ReadAllText("assets/table.xml");
-            var tables = ICDAR19TableParser.ParseDocument(xml);
-
             if (args.Length < 2)
             {
                 Console.WriteLine("Usage: cranelift inputDir outputDir [langs]");
@@ -124,7 +121,7 @@ namespace Cranelift.ConsoleRunner
                     var imagePath = files[x];
 
                     var bitmap = (Bitmap)Image.FromFile(imagePath);
-                    bitmap = DrawBoxes(bitmap, hocrPage, tables);
+                    bitmap = DrawBoxes(bitmap, hocrPage);
 
                     var destinationImage = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(page.Name) + ".boxes.jpg");
                     bitmap.Save(destinationImage);
@@ -140,7 +137,7 @@ namespace Cranelift.ConsoleRunner
             Console.WriteLine($"Result: {result.Status}");
         }
 
-        private static Bitmap DrawBoxes(Bitmap bitmap, HocrPage hocrPage, IEnumerable<ICDAR19Table> tables)
+        private static Bitmap DrawBoxes(Bitmap bitmap, HocrPage hocrPage)
         {
             var paragraphPen = Pens.Red;
             var linePen = Pens.Green;
@@ -165,7 +162,7 @@ namespace Cranelift.ConsoleRunner
                     }
                 }
 
-                foreach (var table in tables)
+                foreach (var table in hocrPage.Tables)
                 {
                     graphics.DrawRectangle(tablePen, ToRectangle(table.BoundingBox));
 

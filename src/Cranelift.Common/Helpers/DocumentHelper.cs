@@ -112,6 +112,63 @@ namespace Cranelift.Common.Helpers
                         body.Append(paragraph);
                     }
 
+                    foreach (var table in page.Tables)
+                    {
+                        var paragraphs = page.Paragraphs
+                            .Where(p => table.BoundingBox.AlmostContains(p.BoundingBox.Value))
+                            .ToArray();
+
+                        var allWords = paragraphs.SelectMany(p => p.Lines.SelectMany(l => l.Words)).ToArray();
+
+                        var rows = table.Cells.Max(c => c.EndRow) + 1;
+                        var columns = table.Cells.Max(c => c.EndColumn) + 1;
+
+                        var wordTable = new Table();
+                        var tableGrid = new TableGrid();
+
+                        for (var c = 0; c < columns; c++)
+                        {
+                            tableGrid.AppendChild(new GridColumn());
+                        }
+
+                        wordTable.AppendChild(tableGrid);
+
+                        for (int r = 0; r < rows; r++)
+                        {
+                            var row = new TableRow();
+                            var cells = table.Cells.Where(c => c.StartRow == r && c.EndRow == r).ToList();
+
+                            for (int c = 0; c < columns; c++)
+                            {
+                                var icdar19Cell = cells.FirstOrDefault(x => x.StartColumn == c && x.EndColumn == c);
+                                var wordCell = new TableCell();
+
+                                // Specify the width property of the table cell.
+                                wordCell.Append(new TableCellProperties(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = "2400" }));
+
+                                if (icdar19Cell != null)
+                                {
+                                    var words = allWords.Where(w => icdar19Cell.BoundingBox.AlmostContains(w.BoundingBox.Value))
+                                                        .OrderByDescending(w => w.BoundingBox.Value.X)
+                                                        .ThenByDescending(w => w.BoundingBox.Value.Y)
+                                                        .ToList();
+
+                                    foreach (var word in words)
+                                    {
+                                        var text = new Text(word.Text) { Space = SpaceProcessingModeValues.Preserve };
+                                        wordCell.Append(new Paragraph(new Run(text)));
+                                    }
+                                }
+
+                                row.Append(wordCell);
+                            }
+
+                            wordTable.Append(row);
+                        }
+
+                        body.Append(wordTable);
+                    }
+
                     var pageBreak = new Paragraph(new Run(new Break() { Type = BreakValues.Page }));
                     body.Append(pageBreak);
                 }

@@ -163,7 +163,10 @@ namespace Cranelift.Common
                     cancellationToken);
 
                 _logger("Generating docx file...");
-                hocrPages = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
+                var xml = File.ReadAllText("assets/table.xml");
+                var tables = ICDAR19TableParser.ParseDocument(xml);
+
+                hocrPages = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes, tables)).ToArray();
                 var wordDocument = _documentHelper.CreateWordDocument(hocrPages);
 
                 await _blobStorage.UploadBlob(
