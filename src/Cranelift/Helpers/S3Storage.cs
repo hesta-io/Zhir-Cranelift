@@ -28,7 +28,7 @@ namespace Cranelift.Helpers
             });
         }
 
-        public async Task DownloadBlobs(
+        private async Task DownloadBlobs(
             string prefix,
             Func<string, Stream> getDestinationStream,
             CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ namespace Cranelift.Helpers
             }
         }
 
-        public async Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken)
+        private async Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken)
         {
             var request = new PutObjectRequest
             {
@@ -64,6 +64,52 @@ namespace Cranelift.Helpers
 
             var response = await _client.PutObjectAsync(request, cancellationToken);
             return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+        }
+
+        private async Task DownloadBlobs(string prefix, string directory, CancellationToken cancellationToken)
+        {
+            await DownloadBlobs(prefix, key =>
+            {
+                var path = Path.Combine(directory, key);
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                return File.OpenWrite(path);
+            }, cancellationToken);
+        }
+
+        private async Task<bool> UploadBlob(
+            string key,
+            string filePath,
+            string contentType = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (contentType is null)
+            {
+                if (filePath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/jpeg";
+                }
+                else if (filePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/png";
+                }
+            }
+
+            using (var stream = File.OpenRead(filePath))
+            {
+                return await UploadBlob(key, stream, contentType, cancellationToken);
+            }
+        }
+
+        public async Task DownloadBlobs(int userId, string jobId, Func<string, Stream> getDestinationStream, CancellationToken cancellationToken)
+        {
+            var originalPrefix = $"{Constants.Original}/{userId}/{jobId}";
+            await DownloadBlobs(originalPrefix, getDestinationStream, cancellationToken);
+        }
+
+        public async Task<bool> UploadBlob(int userId, string jobId, string name, Stream data, string contentType, CancellationToken cancellationToken)
+        {
+            var key = $"{Constants.Done}/{userId}/{jobId}/{name}";
+            return await UploadBlob(key, data, contentType, cancellationToken);
         }
     }
 }

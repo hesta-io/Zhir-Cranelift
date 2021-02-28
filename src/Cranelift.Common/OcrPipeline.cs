@@ -60,10 +60,10 @@ namespace Cranelift.Common
         {
             var status = OcrPipelineStatus.Completed;
 
-            var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
             var originalPath = Path.Combine(Path.GetTempPath(), Constants.Cranelift);
+            var originalPrefix = $"{Constants.Original}/{job.UserId}/{job.Id}";
 
-            await _blobStorage.DownloadBlobs(originalPrefix, originalPath, cancellationToken);
+            await _blobStorage.DownloadBlobs(job.UserId, job.Id, originalPath, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -125,14 +125,14 @@ namespace Cranelift.Common
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (status  == OcrPipelineStatus.Completed)
+            if (status == OcrPipelineStatus.Completed)
             {
-                var folderKey = $"{Constants.Done}/{job.UserId}/{job.Id}";
-
                 _logger("Generating pdf file...");
                 var pdfBytes = _documentHelper.MergePages(pages.Select(p => p.PdfResult).ToList());
                 await _blobStorage.UploadBlob(
-                    $"{folderKey}/result.pdf",
+                    job.UserId,
+                    job.Id,
+                    "result.pdf",
                     new MemoryStream(pdfBytes),
                     Constants.Pdf,
                     cancellationToken);
@@ -141,7 +141,9 @@ namespace Cranelift.Common
                 var text = string.Join("\n\n\n", pages.Select(p => p.Result));
                 var textBytes = Encoding.UTF8.GetBytes(text);
                 await _blobStorage.UploadBlob(
-                    $"{folderKey}/result.txt",
+                    job.UserId,
+                    job.Id,
+                    "result.txt",
                     new MemoryStream(textBytes),
                     Constants.PlainText,
                     cancellationToken);
@@ -150,7 +152,9 @@ namespace Cranelift.Common
                 var hocr = string.Join("\n\n\n", pages.Select(p => p.HocrResult));
                 var hocrBytes = Encoding.UTF8.GetBytes(hocr);
                 await _blobStorage.UploadBlob(
-                    $"{folderKey}/result.hocrlist",
+                    job.UserId,
+                    job.Id,
+                    "result.hocrlist",
                     new MemoryStream(hocrBytes),
                     Constants.PlainText,
                     cancellationToken);
@@ -160,7 +164,9 @@ namespace Cranelift.Common
                 var wordDocument = _documentHelper.CreateWordDocument(paragraphs);
 
                 await _blobStorage.UploadBlob(
-                   $"{folderKey}/result.docx",
+                    job.UserId,
+                    job.Id,
+                   "result.docx",
                    wordDocument,
                    Constants.Docx,
                    cancellationToken);
@@ -207,7 +213,8 @@ namespace Cranelift.Common
                     page.HocrResult = result.HocrOutput;
                     page.PdfResult = result.PdfOutput;
                     // page.FormatedResult
-                    page.Succeeded = await _blobStorage.UploadBlob(doneKey, donePath, cancellationToken: cancellationToken);
+                    page.Succeeded = await _blobStorage.UploadBlob(
+                        job.UserId, job.Id, page.Name, filePath: donePath, cancellationToken: cancellationToken);
                 }
                 else
                 {

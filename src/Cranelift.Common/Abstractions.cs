@@ -32,8 +32,8 @@ namespace Cranelift.Common.Abstractions
 
     public interface IBlobStorage
     {
-        Task DownloadBlobs(string prefix, Func<string, Stream> getDestinationStream, CancellationToken cancellationToken);
-        Task<bool> UploadBlob(string key, Stream data, string contentType, CancellationToken cancellationToken);
+        Task DownloadBlobs(int userId, string jobId, Func<string, Stream> getDestinationStream, CancellationToken cancellationToken);
+        Task<bool> UploadBlob(int userId, string jobId, string name, Stream data, string contentType, CancellationToken cancellationToken);
     }
 
 }

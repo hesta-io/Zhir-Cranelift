@@ -11,9 +11,14 @@ namespace Cranelift.Common
 {
     public static class BlobStorageExtensions
     {
-        public static async Task DownloadBlobs(this IBlobStorage storage, string prefix, string directory, CancellationToken cancellationToken)
+        public static async Task DownloadBlobs(
+            this IBlobStorage blobStorage, 
+            int userId, 
+            string jobId, 
+            string directory, 
+            CancellationToken cancellationToken)
         {
-            await storage.DownloadBlobs(prefix, key =>
+            await blobStorage.DownloadBlobs(userId, jobId, key =>
             {
                 var path = Path.Combine(directory, key);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -22,8 +27,10 @@ namespace Cranelift.Common
         }
 
         public static async Task<bool> UploadBlob(
-            this IBlobStorage storage,
-            string key,
+            this IBlobStorage blobStorage,
+            int userId, 
+            string jobId,
+            string name,
             string filePath,
             string contentType = null,
             CancellationToken cancellationToken = default)
@@ -42,12 +49,10 @@ namespace Cranelift.Common
 
             using (var stream = File.OpenRead(filePath))
             {
-                return await storage.UploadBlob(key, stream, contentType, cancellationToken);
+                return await blobStorage.UploadBlob(userId, jobId, name, stream, contentType, cancellationToken);
             }
         }
     }
-
-    
 }
 
 namespace System.Linq
