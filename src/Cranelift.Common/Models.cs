@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace Cranelift.Helpers
+namespace Cranelift.Common.Models
 {
     public static class ModelConstants
     {
@@ -94,7 +94,7 @@ namespace Cranelift.Helpers
             if (string.IsNullOrWhiteSpace(Lang))
                 return new string[0];
 
-            return Lang.Split(",").Select(l => l.Trim()).ToArray();
+            return Lang.Split(',').Select(l => l.Trim()).ToArray();
         }
 
         public bool HasFinished()

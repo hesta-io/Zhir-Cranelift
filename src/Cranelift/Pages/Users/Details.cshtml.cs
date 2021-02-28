@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+using Cranelift.Common.Models;
+
 namespace Cranelift.Pages.Users
 {
     [Authorize]

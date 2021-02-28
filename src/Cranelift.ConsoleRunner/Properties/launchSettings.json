@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Cranelift.ConsoleRunner": {
+      "commandName": "Project",
+      "commandLineArgs": " C:\\Users\\muham\\Desktop\\images C:\\Users\\muham\\Desktop\\images\\out"
+    }
+  }
+}

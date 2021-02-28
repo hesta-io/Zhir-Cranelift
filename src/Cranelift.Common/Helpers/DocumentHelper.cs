@@ -8,7 +8,7 @@ using System.Linq;
 
 using UglyToad.PdfPig.Writer;
 
-namespace Cranelift.Helpers
+namespace Cranelift.Common.Helpers
 {
     public class DocumentHelper
     {
@@ -117,9 +117,8 @@ namespace Cranelift.Helpers
                 }
             }
 
-            //stream.Position = 0;
+            stream.Seek(0, SeekOrigin.Begin);
 
-            //return stream.ToArray();
             return stream;
         }
 

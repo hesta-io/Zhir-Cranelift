@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace Cranelift.Helpers
+namespace Cranelift.Common.Helpers
 {
     public enum TextDirection
     {
@@ -183,7 +181,7 @@ namespace Cranelift.Helpers
                 return dict;
             }
 
-            var parts = title.Split(";");
+            var parts = title.Split(';');
 
             foreach (var p in parts)
             {

@@ -14,6 +14,9 @@ using Cranelift.Services;
 using Hangfire.Console;
 using Cranelift.Jobs;
 using System.Net;
+using Cranelift.Common.Abstractions;
+using Cranelift.Common.Helpers;
+using Cranelift.Common;
 
 namespace Cranelift
 {
@@ -60,7 +63,7 @@ namespace Cranelift
             services.AddHostedService<JobListener>();
 
             services.AddScoped<IDbContext, MySqlDbContext>();
-            services.AddScoped<IStorage, S3Storage>();
+            services.AddScoped<IBlobStorage, S3Storage>();
             services.AddScoped<PythonHelper>();
             services.AddScoped<DocumentHelper>();
             services.AddScoped<FastPayService>();

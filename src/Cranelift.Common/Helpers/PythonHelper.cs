@@ -1,11 +1,9 @@
 ﻿using Medallion.Shell;
 
-using Microsoft.Extensions.Configuration;
-
 using System;
 using System.Threading.Tasks;
 
-namespace Cranelift.Helpers
+namespace Cranelift.Common.Helpers
 {
     public class PythonOptions
     {
@@ -16,9 +14,9 @@ namespace Cranelift.Helpers
     {
         private readonly PythonOptions _options;
 
-        public PythonHelper(IConfiguration configuration)
+        public PythonHelper(PythonOptions options)
         {
-            _options = configuration.GetSection("Python").Get<PythonOptions>();
+            _options = options;
         }
 
         public async Task<CommandResult> Run(string[] arguments, Action<Shell.Options> options)

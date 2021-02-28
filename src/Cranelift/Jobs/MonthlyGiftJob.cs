@@ -1,4 +1,5 @@
 ﻿using Cranelift.Helpers;
+using Cranelift.Common.Models;
 
 using Hangfire.Console;
 using Hangfire.Server;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Cranelift.Common;
 
 namespace Cranelift.Jobs
 {

@@ -10,6 +10,9 @@ using System;
 using Hangfire;
 using Microsoft.Extensions.Configuration;
 
+using Cranelift.Common.Models;
+using Cranelift.Common;
+
 namespace Cranelift.Jobs
 {
     public class FastPayWatcherJob
