@@ -48,14 +48,20 @@ namespace Cranelift.Common.Helpers
 
     public struct HocrRect
     {
-        public HocrRect(HocrPoint bottomLeft, HocrPoint topRight)
+        public HocrRect(HocrPoint upperLeft, HocrPoint lowerRight)
         {
-            BottomLeft = bottomLeft;
-            TopRight = topRight;
+            UpperLeft = upperLeft;
+            LowerRight = lowerRight;
         }
 
-        public HocrPoint BottomLeft { get; }
-        public HocrPoint TopRight { get; }
+        public double X => UpperLeft.X;
+        public double Y => UpperLeft.Y;
+
+        public double Width => LowerRight.X - UpperLeft.X;
+        public double Height => LowerRight.Y - UpperLeft.Y;
+
+        public HocrPoint UpperLeft { get; }
+        public HocrPoint LowerRight { get; }
     }
 
     // https://en.wikipedia.org/wiki/HOCR
@@ -122,13 +128,12 @@ namespace Cranelift.Common.Helpers
             foreach (var l in p.Elements(Name("span"))) // ocr_line or ocr_caption
             {
                 var line = new HocrLine();
-                line.BoundingBox = ParseBoundingBox(ParseTitle(p.GetTitle()));
+                line.BoundingBox = ParseBoundingBox(ParseTitle(l.GetTitle()));
                 line.Words = new List<HocrWord>();
 
                 foreach (var w in l.Descendants(Name("span"))) // ocrx_word
                 {
                     var word = new HocrWord();
-                    var title = w.GetTitle();
 
                     var properties = ParseTitle(w.GetTitle());
 

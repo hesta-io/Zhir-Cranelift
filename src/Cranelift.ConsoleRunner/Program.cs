@@ -4,7 +4,9 @@ using Cranelift.Common.Helpers;
 using Cranelift.Common.Models;
 
 using System;
+using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -81,7 +83,7 @@ namespace Cranelift.ConsoleRunner
                 Path = "python3"
             };
 
-            var files = Directory.EnumerateFiles(inputDir);
+            var files = Directory.EnumerateFiles(inputDir).ToArray();
             var tempFolder = Path.Combine(Path.GetTempPath(), "cranelift", "original", job.UserId.ToString(), job.Id);
             Directory.CreateDirectory(tempFolder);
             int i = 0;
@@ -108,6 +110,23 @@ namespace Cranelift.ConsoleRunner
 
             var result = await pipeline.RunAsync(job, default);
 
+            if (result.Status == OcrPipelineStatus.Completed)
+            {
+                for (int x = 0; x < result.Pages.Length; x++)
+                {
+                    var page = result.Pages[x];
+                    var hocrPage = result.HocrPages[x];
+
+                    var imagePath = files[x];
+
+                    var bitmap = (Bitmap)Image.FromFile(imagePath);
+                    bitmap = DrawBoxes(bitmap, hocrPage);
+
+                    var destinationImage = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(page.Name) + ".boxes.jpg");
+                    bitmap.Save(destinationImage);
+                }
+            }
+
             try
             {
                 Directory.Delete(tempFolder, recursive: true);
@@ -115,6 +134,37 @@ namespace Cranelift.ConsoleRunner
             catch (Exception) { }
 
             Console.WriteLine($"Result: {result.Status}");
+        }
+
+        private static Bitmap DrawBoxes(Bitmap bitmap, HocrPage hocrPage)
+        {
+            var paragraphPen = Pens.Red;
+            var linePen = Pens.Green;
+            var wordPen = Pens.Blue;
+
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                foreach (var paragaph in hocrPage.Paragraphs)
+                {
+                    graphics.DrawRectangle(paragraphPen, ToRectangle(paragaph.BoundingBox.Value));
+
+                    foreach (var line in paragaph.Lines)
+                    {
+                        graphics.DrawRectangle(linePen, ToRectangle(line.BoundingBox.Value));
+                        foreach (var word in line.Words)
+                        {
+                            graphics.DrawRectangle(wordPen, ToRectangle(word.BoundingBox.Value));
+                        }
+                    }
+                }
+            }
+
+            return bitmap;
+        }
+
+        private static Rectangle ToRectangle(HocrRect hocrRect)
+        {
+            return new Rectangle((int)hocrRect.X, (int)hocrRect.Y, (int)hocrRect.Width, (int)hocrRect.Height);
         }
     }
 }

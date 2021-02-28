@@ -24,6 +24,7 @@ namespace Cranelift.Common
     {
         public OcrPipelineStatus Status { get; set; }
         public Page[] Pages { get; internal set; }
+        public HocrPage[] HocrPages { get; set; }
     }
 
     public class OcrPipelineOptions
@@ -125,6 +126,8 @@ namespace Cranelift.Common
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            HocrPage[] hocrPages = null;
+
             if (status == OcrPipelineStatus.Completed)
             {
                 _logger("Generating pdf file...");
@@ -160,8 +163,8 @@ namespace Cranelift.Common
                     cancellationToken);
 
                 _logger("Generating docx file...");
-                var paragraphs = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
-                var wordDocument = _documentHelper.CreateWordDocument(paragraphs);
+                hocrPages = pages.Select(p => HocrParser.Parse(p.HocrResult, p.PredictSizes)).ToArray();
+                var wordDocument = _documentHelper.CreateWordDocument(hocrPages);
 
                 await _blobStorage.UploadBlob(
                     job.UserId,
@@ -190,6 +193,7 @@ namespace Cranelift.Common
             {
                 Status = status,
                 Pages = pages,
+                HocrPages = hocrPages
             };
         }
 
