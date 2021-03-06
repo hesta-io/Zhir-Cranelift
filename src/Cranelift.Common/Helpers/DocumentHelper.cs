@@ -126,9 +126,11 @@ namespace Cranelift.Common.Helpers
                         var wordTable = new Table();
                         var tableGrid = new TableGrid();
 
+                        var columnWidthTwips = ((int)((double)(a4Size.Width - (a4Size.Width * 0.2)) / columns)).ToString();
+
                         for (var c = 0; c < columns; c++)
                         {
-                            tableGrid.AppendChild(new GridColumn());
+                            tableGrid.AppendChild(new GridColumn() { Width = new StringValue(columnWidthTwips) });
                         }
 
                         wordTable.AppendChild(tableGrid);
