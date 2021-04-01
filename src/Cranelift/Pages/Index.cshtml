@@ -39,8 +39,22 @@
 
     <div class="card col-md-5 m-md-2">
         <div class="p-3 card-body">
+            <h3 class="card-title text-center">Average Active Users</h3>
+            <p class="card-text text-center"><span id="average-daily-active-users-number">?</span> Daily, <span id="average-weekly-active-users-number">?</span> Weekly, <span id="average-monthly-active-users-number">?</span> Monthly</p>
+        </div>
+    </div>
+
+    <div class="card col-md-5 m-md-2">
+        <div class="p-3 card-body">
             <h3 class="card-title text-center" id="total-jobs-number">?</h3>
             <p class="card-text text-center">Jobs (<span id="success-rate-number"></span>% success)</p>
+        </div>
+    </div>
+
+    <div class="card col-md-5 m-md-2">
+        <div class="p-3 card-body">
+            <h3 class="card-title text-center" id="total-pages-number">?</h3>
+            <p class="card-text text-center">Pages</p>
         </div>
     </div>
 </div>
@@ -152,6 +166,12 @@
 
             setElementText('total-jobs-number', stats.totalJobs);
             setElementText('success-rate-number', successRate);
+
+            setElementText('average-daily-active-users-number', stats.averageDailyActiveUsers);
+            setElementText('average-weekly-active-users-number', stats.averageWeeklyActiveUsers);
+            setElementText('average-monthly-active-users-number', stats.averageMonthlyActiveUsers);
+
+            setElementText('total-pages-number', stats.totalPages);
 
             setElementText('processing-time-number', Math.round(stats.averageProcessingTimePerPage * 100) / 100);
 

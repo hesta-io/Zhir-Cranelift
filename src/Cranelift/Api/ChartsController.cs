@@ -77,7 +77,7 @@ order by day_of_week, hour";
                     var values = new List<int>();
                     list.Add(values);
 
-                    for (int h = 0; h < 24; h ++)
+                    for (int h = 0; h < 24; h++)
                     {
                         hours.TryGetValue(h, out var value);
                         values.Add(value);
@@ -314,7 +314,12 @@ where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
                 var newUsers = await connection.ExecuteScalarAsync<int>($"select count(*) from user where datediff(UTC_TIMESTAMP(), created_at) < {days}");
                 var verifiedUsers = await connection.ExecuteScalarAsync<int>($"select count(*) from user where verified = true");
 
+                var averageDailyActiveUsers = Math.Round(activeUsers / (double)days, 1);
+                var averageWeeklyActiveUsers = Math.Round(activeUsers / Math.Max(1, (double)days / 7), 1);
+                var averageMonthlyActiveUsers = Math.Round(activeUsers / Math.Max(1, (double)days / 30), 1);
+
                 var jobs = await connection.QueryAsync<string>($"select status from job where datediff(UTC_TIMESTAMP(), created_at) < {days}");
+                var totalPages = await connection.QueryAsync<int>($"select sum(page_count) from job where datediff(UTC_TIMESTAMP(), created_at) < {days}");
                 var completedJobs = jobs.Count(s => s == "completed");
                 var failedJobs = jobs.Count(s => s == "failed");
                 var totalJobs = jobs.Count();
@@ -329,8 +334,12 @@ where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
                     verifiedUsers,
                     completedJobs,
                     failedJobs,
+                    totalPages,
                     totalJobs,
-                    averageProcessingTimePerPage
+                    averageProcessingTimePerPage,
+                    averageDailyActiveUsers,
+                    averageWeeklyActiveUsers,
+                    averageMonthlyActiveUsers
                 });
             }
         }
