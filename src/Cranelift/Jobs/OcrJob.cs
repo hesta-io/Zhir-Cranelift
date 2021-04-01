@@ -124,7 +124,8 @@ namespace Cranelift.Jobs
 
                     context.CancellationToken.ThrowIfCancellationRequested();
 
-                    var pipeline = new OcrPipeline(l => context.WriteLine(l),
+                    var pipeline = new OcrPipeline(
+                        l => context.WriteLine(l),
                         _storage,
                         _documentHelper,
                         _pythonHelper,

@@ -86,6 +86,12 @@ namespace Cranelift
             services.AddRazorPages();
             services.AddControllers();
 
+            services.AddSingleton(p =>
+            {
+                var configuration = p.GetRequiredService<IConfiguration>();
+                return configuration.GetSection("Python").Get<PythonOptions>();
+            });
+
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
