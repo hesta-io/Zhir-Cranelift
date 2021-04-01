@@ -57,11 +57,15 @@
                     "url": '@Url.Action("GetAll", "Jobs")',
                     'dataSrc': ''
                 },
+                "order": [[0, "desc"]],
                 "columns": [
                     {
                         "data": "createdAt",
                         render: (data, type, row, meta) => {
-                            return moment.utc(data).local().format('DD/MM/YYYY hh:mm A');
+                            if (type == 'sort')
+                                return moment.utc(data).unix();
+                            else
+                                return moment.utc(data).local().format('DD/MM/YYYY hh:mm A');
                         }
                     },
                     {
