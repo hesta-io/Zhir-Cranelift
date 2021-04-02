@@ -24,6 +24,7 @@ namespace Cranelift.Common.Helpers
     {
         public List<HocrParagraph> Paragraphs { get; set; }
         public bool ShouldPredictSizes { get; set; }
+        public HocrRect? BoundingBox { get; set; }
     }
 
     public class HocrLine
@@ -48,14 +49,22 @@ namespace Cranelift.Common.Helpers
 
     public struct HocrRect
     {
-        public HocrRect(HocrPoint bottomLeft, HocrPoint topRight)
+        public HocrRect(HocrPoint topLeft, HocrPoint bottomRight)
         {
-            BottomLeft = bottomLeft;
-            TopRight = topRight;
+            TopLeft = topLeft;
+            BottomRight = bottomRight;
         }
 
-        public HocrPoint BottomLeft { get; }
-        public HocrPoint TopRight { get; }
+        public double Left => TopLeft.X;
+        public double Right => BottomRight.X;
+        public double Top => TopLeft.Y;
+        public double Bottom => BottomRight.Y;
+
+        public double Width => Right - Left;
+        public double Height => Bottom - Top;
+
+        public HocrPoint TopLeft { get; }
+        public HocrPoint BottomRight { get; }
     }
 
     // https://en.wikipedia.org/wiki/HOCR
@@ -103,6 +112,7 @@ namespace Cranelift.Common.Helpers
 
             return new HocrPage
             {
+                BoundingBox = ParseBoundingBox(ParseTitle(page.Attribute("title")?.Value)),
                 Paragraphs = paragraphs,
                 ShouldPredictSizes = predictSizes
             };

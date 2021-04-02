@@ -32,6 +32,9 @@ namespace Cranelift.Common.Helpers
 
                 foreach (var page in pages)
                 {
+                    var minWidth = page.BoundingBox?.Width * 0.7;
+                    var averageWidth = page.Paragraphs.Average(p => p.BoundingBox?.Width);
+
                     foreach (var p in page.Paragraphs)
                     {
                         var paragraph = new Paragraph();
@@ -69,6 +72,10 @@ namespace Cranelift.Common.Helpers
                         fontSize *= 2;
 
                         var lastLine = p.Lines[p.Lines.Count - 1];
+                        var firstLine = p.Lines[0];
+
+
+
                         foreach (var line in p.Lines)
                         {
                             int count = 0;
@@ -97,6 +104,7 @@ namespace Cranelift.Common.Helpers
                                         Val = HighlightColorValues.Yellow
                                     };
                                 }
+
                                 if (line != lastLine || count++ < line.Words.Count - 1)
                                 {
                                     word.Text += " ";
@@ -106,6 +114,16 @@ namespace Cranelift.Common.Helpers
                                 r.Append(text);
 
                                 paragraph.Append(r);
+                            }
+
+                            if (line != firstLine)
+                            {
+                                var previousLine = p.Lines[p.Lines.IndexOf(line) - 1];
+                                if ((line.BoundingBox?.Width < minWidth) ||
+                                    (line.BoundingBox?.Width < averageWidth))
+                                {
+                                    paragraph.Append(new Run(new Break() { Type = BreakValues.TextWrapping }));
+                                }
                             }
                         }
 
