@@ -349,7 +349,7 @@ namespace Cranelift.Common
             var extension = Path.GetExtension(path).ToLowerInvariant();
             var validExtensions = new HashSet<string>
             {
-                ".jpg", ".jpeg", ".jfif", ".png", ".webp", ".bmp", ".tiff"
+                ".jpg", ".jpeg", ".jfif", ".png", ".webp", ".bmp", ".tiff", ".tif",
             };
 
             return validExtensions.Contains(extension);
