@@ -54,7 +54,8 @@ namespace Cranelift.Api
 
             var sql = @"select j.id, j.name as job_name, j.lang as Lang, u.name as user_name,j.rate, u.id as user_id, j.queued_at, j.processed_at, j.finished_at, j.created_at, j.status, j.failing_reason, j.page_count from job j
 left join `user` u on u.id = j.user_id 
-order by j.created_at DESC";
+order by j.created_at DESC
+limit 1000";
 
             var jobs = await connection.QueryAsync<JobDto>(sql);
 
