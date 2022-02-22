@@ -121,7 +121,7 @@ namespace Cranelift
                 backgroundJobClient.Delete(job);
             }
 
-            backgroundJobClient.Enqueue<FastPayWatcherJob>(job => job.Execute(null));
+            // backgroundJobClient.Enqueue<FastPayWatcherJob>(job => job.Execute(null));
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
