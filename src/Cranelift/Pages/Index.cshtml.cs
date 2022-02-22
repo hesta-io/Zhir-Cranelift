@@ -62,7 +62,7 @@ namespace Cranelift.Pages
 
             const int Limit = 15;
             var query = $@"select id, name, company_name, 
-        (select sum(page_count) from user_transaction ut where ut.user_id = u.id) as balance,
+        (select sum(page_count) from user_transaction ut where ut.user_id = u.id and ut.confirmed = 1) as balance,
 		(select sum(page_count) from job j where j.user_id = u.id and DATEDIFF(UTC_TIMESTAMP(), j.created_at) <= {SelectedPeriod.Days}) as number_of_pages,
 		(select count(id) from job j2 where j2.user_id = u.id and DATEDIFF(UTC_TIMESTAMP(), j2.created_at) <= {SelectedPeriod.Days}) as number_of_jobs
 from `user` u

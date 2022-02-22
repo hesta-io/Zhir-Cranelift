@@ -166,29 +166,29 @@
         {
             var transaction = Model.Transactions[i];
 
-        <tr>
-            <th scope="row">@(i + 1)</th>
-            <td>@((transaction.Amount ?? 0).ToString("N0"))</td>
-            <td>@transaction.PageCount.ToString("N0")</td>
-            <td>@transaction.PaymentMedium</td>
-            <td>@transaction.TransactionId</td>
-            <td>@transaction.Type</td>
-            <td>@transaction.UserNote</td>
-            <td>@transaction.AdminNote</td>
-            <td>@transaction.Date.ToString("yyyy-MM-dd hh:mm tt UTCzz")</td>
-            <td>@(transaction.Confirmed == true ? "Yes" : "No")</td>
-        </tr>
+            <tr style="@(transaction.Confirmed != true ? "color: red;" : "")">
+                <th scope="row">@(i + 1)</th>
+                <td>@((transaction.Amount ?? 0).ToString("N0"))</td>
+                <td>@transaction.PageCount.ToString("N0")</td>
+                <td>@transaction.PaymentMedium</td>
+                <td>@transaction.TransactionId</td>
+                <td>@transaction.Type</td>
+                <td>@transaction.UserNote</td>
+                <td>@transaction.AdminNote</td>
+                <td>@transaction.Date.ToString("yyyy-MM-dd hh:mm tt UTCzz")</td>
+                <td>@(transaction.Confirmed == true ? "Yes" : "No")</td>
+            </tr>
         }
     </tbody>
 </table>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
 
-    <script>
-        $(document).ready(function () {
-            $('#transactions-table').DataTable();
-        });
-    </script>
+<script>
+    $(document).ready(function () {
+        $('#transactions-table').DataTable();
+    });
+</script>
 }
