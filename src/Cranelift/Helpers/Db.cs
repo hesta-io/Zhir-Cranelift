@@ -2,6 +2,7 @@
 
 using Microsoft.Extensions.Configuration;
 
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -10,7 +11,6 @@ using System.Threading.Tasks;
 
 using Cranelift.Common.Models;
 using Cranelift.Common;
-using MySqlConnector;
 
 namespace Cranelift.Helpers
 {

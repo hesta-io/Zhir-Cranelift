@@ -13,6 +13,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using MySql.Data.MySqlClient;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
