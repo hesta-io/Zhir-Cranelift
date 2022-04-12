@@ -51,6 +51,7 @@ namespace Cranelift.Pages
             new Period { Days = 90, Name = "Past 3 months" },
             new Period { Days = 180, Name = "Past 6 months" },
             new Period { Days = 360, Name = "Past year" },
+	    new Period { Days = 10000, Name = "All time" },
         };
 
         public Period SelectedPeriod { get; set; } = new Period { Days = 7, Name = "Past week" };
