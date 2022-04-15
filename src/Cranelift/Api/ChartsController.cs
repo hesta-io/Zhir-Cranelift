@@ -103,15 +103,29 @@ order by created_date desc";
                 var items = await connection.QueryAsync<DayChartQuery>(sql);
                 items = items.OrderBy(i => i.CreatedDate).ToArray();
 
-                var months = false;
+                var mode = GroupMode.Days;
 
-                if (days >= 60)
+                if (days >= 120)
                 {
-                    items = items.GroupBy(i => new Tuple<int, string>(i.CreatedDate.Month, i.Status))
-                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key.Item1, 1), Status = g.Key.Item2 })
+                    items = items.GroupBy(i => new Tuple<int, int, string>(i.CreatedDate.Year, i.CreatedDate.Month, i.Status))
+                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, 1), Status = g.Key.Item3 })
                                  .OrderBy(i => i.CreatedDate).ToArray();
 
-                    months = true;
+                    mode = GroupMode.Months;
+                }
+                else if (days > 90)
+                {
+                    items = GroupDays(items, 10).OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
+                }
+                else if (days > 30)
+                {
+                    items = GroupDays(items, 5).OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
                 }
 
                 var dates = items.Select(i => i.CreatedDate).Distinct().ToHashSet();
@@ -145,8 +159,26 @@ order by created_date desc";
                 return new Chart
                 {
                     Datasets = datasets.Select(i => i.Value),
-                    Labels = dates.Select(d => months ? d.ToString("MMM yyyy") : d.ToString("MM/dd")).ToArray()
+                    Labels = dates.Select(d => Format(d, mode)).ToArray()
                 };
+            }
+
+            IEnumerable<DayChartQuery> GroupDays(IEnumerable<DayChartQuery> items, int days)
+            {
+                return items
+                    .GroupBy(i => 
+                        new Tuple<int, int, int, string>(
+                            i.CreatedDate.Year, 
+                            i.CreatedDate.Month, 
+                            RoundOff(i.CreatedDate.Day, days), i.Status)
+                        )
+
+                    .Select(g => 
+                        new DayChartQuery { 
+                            Count = g.Sum(i => i.Count), 
+                            CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, g.Key.Item3), 
+                            Status = g.Key.Item4 
+                        });
             }
         }
 
@@ -166,15 +198,29 @@ order by created_date desc";
                 var items = await connection.QueryAsync<DayChartQuery>(allPagesCount);
                 items = items.OrderBy(i => i.CreatedDate).ToArray();
 
-                var months = false;
+                var mode = GroupMode.Days;
 
-                if (days >= 60)
+                if (days >= 120)
                 {
-                    items = items.GroupBy(i => i.CreatedDate.Month)
-                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1), Count2 = g.Sum(i => i.Count2) })
+                    items = items.GroupBy(i => new Tuple<int, int, string>(i.CreatedDate.Year, i.CreatedDate.Month, i.Status))
+                                 .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), Count2 = g.Sum(i => i.Count2), CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, 1), Status = g.Key.Item3 })
                                  .OrderBy(i => i.CreatedDate).ToArray();
 
-                    months = true;
+                    mode = GroupMode.Months;
+                }
+                else if (days > 90)
+                {
+                    items = GroupDays(items, 10).OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
+                }
+                else if (days > 30)
+                {
+                    items = GroupDays(items, 5).OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
                 }
 
                 var paidPagesDataset = new Dataset
@@ -202,8 +248,29 @@ order by created_date desc";
                 return new Chart
                 {
                     Datasets = new List<Dataset> { paidPagesDataset, freePagesDataset },
-                    Labels = items.Select(d => months ? d.CreatedDate.ToString("MMM yyyy") : d.CreatedDate.ToString("MM/dd")).ToArray()
+                    Labels = items.Select(d => Format(d.CreatedDate, mode)).ToArray()
                 };
+            }
+
+            IEnumerable<DayChartQuery> GroupDays(IEnumerable<DayChartQuery> items, int days)
+            {
+                return items
+                    .GroupBy(i => 
+                        new Tuple<int, int, int, string>(
+                            i.CreatedDate.Year, 
+                            i.CreatedDate.Month, 
+                            RoundOff(i.CreatedDate.Day, days), 
+                            i.Status)
+                        )
+
+                    .Select(g => 
+                        new DayChartQuery
+                        {
+                            Count = g.Sum(i => i.Count),
+                            Count2 = g.Sum(i => i.Count2),
+                            CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, g.Key.Item3),
+                            Status = g.Key.Item4
+                        });
             }
         }
 
@@ -234,24 +301,40 @@ order by created_date desc";
                 var signUps = await connection.QueryAsync<DayChartQuery>(signUpsSql);
                 var activeUsers = await connection.QueryAsync<DayChartQuery>(activeUsersSql);
 
-                var months = false;
+                var mode = GroupMode.Days;
 
-                if (days < 60)
+                if (days >= 120)
                 {
-                    signUps = signUps.OrderBy(i => i.CreatedDate).ToArray();
-                    activeUsers = activeUsers.OrderBy(i => i.CreatedDate).ToArray();
+                    signUps = signUps.GroupBy(i => new Tuple<int, int>(i.CreatedDate.Year, i.CreatedDate.Month))
+                       .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, 1) })
+                       .OrderBy(i => i.CreatedDate).ToArray();
+
+                    activeUsers = activeUsers.GroupBy(i => new Tuple<int, int>(i.CreatedDate.Year, i.CreatedDate.Month))
+                       .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, 1) })
+                       .OrderBy(i => i.CreatedDate).ToArray();
+
+                    mode = GroupMode.Months;
+                }
+                else if (days > 90)
+                {
+                    signUps = GroupDaysSignUps(signUps, 10).OrderBy(i => i.CreatedDate).ToArray();
+
+                    activeUsers = GroupDaysActiveUsers(activeUsers, 10).OrderBy(i => i.CreatedDate).ToArray();
+
+                    mode = GroupMode.NDays;
+                }
+                else if (days > 30)
+                {
+                    signUps = GroupDaysSignUps(signUps, 5).OrderBy(i => i.CreatedDate).ToArray();
+
+                    activeUsers = GroupDaysActiveUsers(activeUsers, 5).OrderBy(i => i.CreatedDate).ToArray();
+
+                    mode = GroupMode.NDays;
                 }
                 else
                 {
-                    signUps = signUps.GroupBy(i => i.CreatedDate.Month)
-                        .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1) })
-                        .OrderBy(i => i.CreatedDate).ToArray();
-
-                    activeUsers = activeUsers.GroupBy(i => i.CreatedDate.Month)
-                       .Select(g => new DayChartQuery { Count = g.Sum(i => i.Count), CreatedDate = new DateTime(g.First().CreatedDate.Year, g.Key, 1) })
-                       .OrderBy(i => i.CreatedDate).ToArray();
-
-                    months = true;
+                    signUps = signUps.OrderBy(i => i.CreatedDate).ToArray();
+                    activeUsers = activeUsers.OrderBy(i => i.CreatedDate).ToArray();
                 }
 
                 var signUpsDataset = new Dataset
@@ -290,8 +373,44 @@ order by created_date desc";
                 return new Chart
                 {
                     Datasets = new List<Dataset> { signUpsDataset, activeUsersDataset },
-                    Labels = allDates.Select(i => months ? i.ToString("MMM yyyy") : i.ToString("MM/dd")).ToArray()
+                    Labels = allDates.Select(i => Format(i, mode)).ToArray()
                 };
+            }
+
+            IEnumerable<DayChartQuery> GroupDaysSignUps(IEnumerable<DayChartQuery> signUps, int days)
+            {
+                return signUps
+                    .GroupBy(i => 
+                        new Tuple<int, int, int>(
+                            i.CreatedDate.Year, 
+                            i.CreatedDate.Month, 
+                            RoundOff(i.CreatedDate.Day, days))
+                        )
+                                       
+                    .Select(g => 
+                        new DayChartQuery 
+                        { 
+                            Count = g.Sum(i => i.Count), 
+                            CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, g.Key.Item3) 
+                        });
+            }
+
+            IEnumerable<DayChartQuery> GroupDaysActiveUsers(IEnumerable<DayChartQuery> activeUsers, int days)
+            {
+                return activeUsers
+                    .GroupBy(i => 
+                        new Tuple<int, int, int>(
+                            i.CreatedDate.Year, 
+                            i.CreatedDate.Month, 
+                            RoundOff(i.CreatedDate.Day, days))
+                        )
+
+                    .Select(g => 
+                        new DayChartQuery 
+                        { 
+                            Count = g.Sum(i => i.Count),
+                            CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, g.Key.Item3) 
+                        });
             }
         }
 
@@ -344,9 +463,17 @@ where DATEDIFF(UTC_TIMESTAMP(), created_at) < {days} and status = 'completed'";
             }
         }
 
+        enum GroupMode
+        {
+            Days,
+            NDays,
+            Months
+        }
+
         [HttpGet("cumulative-users")]
         public async Task<Chart> GetCumulativeUsers(int days = 7)
         {
+
             var signUpsSql = @$"with signUps as (
 	select created_date, count(*) as count from (
 		SELECT cast(DATE_FORMAT(created_at, '%Y-%m-%d') as date) as created_date from user
@@ -360,8 +487,44 @@ from signUps;";
             using (var connection = await _dbContext.OpenOcrConnectionAsync())
             {
                 var cumulativeUsers = await connection.QueryAsync<DayChartQuery>(signUpsSql);
-                cumulativeUsers = cumulativeUsers.Where(i => (DateTime.UtcNow - i.CreatedDate).TotalDays < days)
-                                 .OrderBy(i => i.CreatedDate).ToArray();
+                cumulativeUsers = cumulativeUsers.Where(i => (DateTime.UtcNow - i.CreatedDate).TotalDays < days);
+
+                var mode = GroupMode.Days;
+
+                if (days > 120)
+                {
+                    cumulativeUsers = cumulativeUsers
+                        .GroupBy(i => new Tuple<int, int>(i.CreatedDate.Year, i.CreatedDate.Month))
+                        .Select(g => new DayChartQuery { Count = g.Last().Count, CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, 1) })
+                        .OrderBy(i => i.CreatedDate)
+                        .ToArray();
+
+                    mode = GroupMode.Months;
+                }
+                else if (days > 90)
+                {
+                    cumulativeUsers = 
+                        GroupDays(cumulativeUsers, 10)
+                       .OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
+                }
+                else if (days > 30)
+                {
+                    cumulativeUsers =
+                        GroupDays(cumulativeUsers, 5)
+                       .OrderBy(i => i.CreatedDate)
+                       .ToArray();
+
+                    mode = GroupMode.NDays;
+                }
+                else
+                {
+                    cumulativeUsers = cumulativeUsers
+                        .OrderBy(i => i.CreatedDate)
+                        .ToArray();
+                }
 
                 var dataset = new Dataset
                 {
@@ -374,10 +537,39 @@ from signUps;";
                 return new Chart
                 {
                     Datasets = new List<Dataset> { dataset },
-                    Labels = cumulativeUsers.Select(i => i.CreatedDate.ToString("MM/dd")).ToArray()
+                    Labels = cumulativeUsers.Select(i => Format(i.CreatedDate, mode)).ToArray()
                 };
+            }
+
+            IEnumerable<DayChartQuery> GroupDays(IEnumerable<DayChartQuery> cumulativeUsers, int days)
+            {
+                return cumulativeUsers
+                    .GroupBy(i => 
+                        new Tuple<int, int, int>(
+                            i.CreatedDate.Year, i.CreatedDate.Month,
+                            RoundOff(i.CreatedDate.Day, days))
+                        )
+
+                    .Select(g => 
+                        new DayChartQuery 
+                        { 
+                            Count = g.Last().Count,
+                            CreatedDate = new DateTime(g.Key.Item1, g.Key.Item2, g.Key.Item3) 
+                        });
             }
         }
 
+        int RoundOff(int number, int factor)
+        {
+            var result = (number / factor) * factor;
+            return Math.Max(1, result);
+        }
+
+        string Format(DateTime date, GroupMode mode)
+        {
+            return mode == GroupMode.Months ? date.ToString("MMM yyyy") :
+                   mode == GroupMode.NDays ? date.ToString("dd MMM yyyy") :
+                   date.ToString("MM/dd");
+        }
     }
 }
