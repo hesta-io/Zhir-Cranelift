@@ -7,9 +7,11 @@ namespace Cranelift.Pages
     [Authorize]
     public class JobsModel : PageModel
     {
-        public void OnGet()
+        public int? UserId { get; private set; }
+
+        public void OnGet(int? userId)
         {
-          
+            UserId = userId;
         }
     }
 }

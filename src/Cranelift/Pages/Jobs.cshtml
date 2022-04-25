@@ -18,118 +18,92 @@
             <th scope="col">Details</th>
         </tr>
     </thead>
-
-    @*<tbody>
-            @for (int i = 0; i < Model.Jobs.Count; i++)
-            {
-                var job = Model.Jobs[i];
-
-            <tr>
-                <th scope="row">@(i + 1)</th>
-                <td>@job.CreatedAt</td>
-                <td><a asp-page="./Users/Details" target="_blank" asp-route-id="@job.UserId">@job.UserName</a></td>
-                <td>@job.JobName</td>
-                <td>@job.SecondsInQueue.ToString("N0")</td>
-                <td>@job.SecondsInProcessing.ToString("N0")</td>
-                <td>@job.PageCount.ToString("N0")</td>
-                <td>@(job.Rate == -1000 ? "" : job.Rate.ToString())</td>
-                <td><p><b>Languages: </b>@job.Lang</p>
-                    <p><b>Status: </b>@job.Status</p>
-                    <p><b>FailingReason: </b>@job.FailingReason</p></td>
-                <td>
-                    <a class="btn btn-primary" target="_blank" href="@job.Text">Text</a>
-                    <a class="btn btn-primary" target="_blank" href="@job.Pdf">Pdf</a>
-                    <a class="btn btn-primary" target="_blank" href="@job.Word">Word</a>
-                </td>
-            </tr>
-            }
-        </tbody>*@
 </table>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
-    <script>
-            $('#main-table').DataTable({
-                "ajax": {
-                    "url": '@Url.Action("GetAll", "Jobs")',
-                    'dataSrc': ''
-                },
-                "order": [[0, "desc"]],
-                "columns": [
-                    {
-                        "data": "createdAt",
-                        render: (data, type, row, meta) => {
-                            if (type == 'sort')
-                                return moment.utc(data).unix();
-                            else
-                                return moment.utc(data).local().format('DD/MM/YYYY hh:mm A');
-                        }
+<script>
+                $('#main-table').DataTable({
+                    "ajax": {
+                        "url": '@Url.Action("GetAll", "Jobs", new { userId = @Model.UserId })',
+                        'dataSrc': ''
                     },
-                    {
-                        "data": "userName",
-                        "render": (data, type, row, meta) => {
-                            return `<a href="../Users/Details/${row.userId}" target="_blank">${escapeHtml(data)}</a>`
-                        }
-                    },
-                    {
-                        "data": "jobName",
-                        "render": (data) => escapeHtml(data)
-                    },
-                    {
-                        "data": "secondsInQueue",
-                        "render": $.fn.dataTable.render.number(',', '.', 2, '')
-                    },
-                    {
-                        "data": "secondsInProcessing",
-                        "render": $.fn.dataTable.render.number(',', '.', 2, '')
-                    },
-                    { "data": "pageCount" },
-                    {
-                        "data": "rate",
-                        "render": (data, type, row, meta) => {
-                            return row.rate == -1000 ? "-" : row.rate;
-                        }
-                    },
-                    {
-                        "data": "lang",
-                        "render": (data, type, row, meta) => {
-                            return `
-<div>
-    <p><b>Languages: </b>${escapeHtml(row.lang)}</p>
-    <p><b>Status: </b>${escapeHtml(row.status)}</p>
-    <p><b>FailingReason: </b>${escapeHtml(row.failingReason)}</p>
-</div>`;
-                        }
-                    },
-                    {
-                        "data": "id",
-                        "render": (data, type, row, meta) => {
-                            return `
-<div>
-    <a class="btn btn-primary" target="_blank" href="${row.text}">Text</a>
-    <a class="btn btn-primary" target="_blank" href="${row.pdf}">Pdf</a>
-    <a class="btn btn-primary" target="_blank" href="${row.word}">Word</a>
-</div>`;
-                        }
-                    },
-                ]
-        });
+                    "order": [[0, "desc"]],
+                    "columns": [
+                        {
+                            "data": "createdAt",
+                            render: (data, type, row, meta) => {
+                                if (type == 'sort')
+                                    return moment.utc(data).unix();
+                                else
+                                    return moment.utc(data).local().format('DD/MM/YYYY hh:mm A');
+                            }
+                        },
+                        {
+                            "data": "userName",
+                            "render": (data, type, row, meta) => {
+                                return `<a href="../Users/Details/${row.userId}" target="_blank">${escapeHtml(data)}</a>`
+                            }
+                        },
+                        {
+                            "data": "jobName",
+                            "render": (data) => escapeHtml(data)
+                        },
+                        {
+                            "data": "secondsInQueue",
+                            "render": $.fn.dataTable.render.number(',', '.', 2, '')
+                        },
+                        {
+                            "data": "secondsInProcessing",
+                            "render": $.fn.dataTable.render.number(',', '.', 2, '')
+                        },
+                        { "data": "pageCount" },
+                        {
+                            "data": "rate",
+                            "render": (data, type, row, meta) => {
+                                return row.rate == -1000 ? "-" : row.rate;
+                            }
+                        },
+                        {
+                            "data": "lang",
+                            "render": (data, type, row, meta) => {
+                                return `
+    <div>
+        <p><b>Languages: </b>${escapeHtml(row.lang)}</p>
+        <p><b>Status: </b>${escapeHtml(row.status)}</p>
+        <p><b>FailingReason: </b>${escapeHtml(row.failingReason)}</p>
+    </div>`;
+                            }
+                        },
+                        {
+                            "data": "id",
+                            "render": (data, type, row, meta) => {
+                                return `
+    <div>
+        <a class="btn btn-primary" target="_blank" href="${row.text}">Text</a>
+        <a class="btn btn-primary" target="_blank" href="${row.pdf}">Pdf</a>
+        <a class="btn btn-primary" target="_blank" href="${row.word}">Word</a>
+    </div>`;
+                            }
+                        },
+                    ]
+            });
 
-        // https://stackoverflow.com/a/6234804/7003797
-        function escapeHtml(unsafe) {
-            if (unsafe) {
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
+            // https://stackoverflow.com/a/6234804/7003797
+            function escapeHtml(unsafe) {
+                if (unsafe) {
+                    return unsafe
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                }
+
+                return '';
             }
-
-            return '';
-        }
-    </script>
+</script>
 }

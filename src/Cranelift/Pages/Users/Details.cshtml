@@ -4,7 +4,10 @@
     ViewData["Title"] = "User details";
 }
 
-<h2>Profile: </h2>
+<h2>
+    <span>Profile: </span>
+    <a class="btn btn-secondary" asp-page="/Jobs" asp-route-userId="@Model.Data.Id">Jobs</a>
+</h2>
 
 <form asp-page="." method="post">
     <div class="row mb-2">

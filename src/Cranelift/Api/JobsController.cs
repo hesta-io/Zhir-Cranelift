@@ -48,12 +48,15 @@ namespace Cranelift.Api
         }
 
         [HttpGet]
-        public async Task<IEnumerable<JobDto>> GetAll()
+        public async Task<IEnumerable<JobDto>> GetAll(int? userId)
         {
             using var connection = await _dbContext.OpenOcrConnectionAsync();
 
-            var sql = @"select j.id, j.name as job_name, j.lang as Lang, u.name as user_name,j.rate, u.id as user_id, j.queued_at, j.processed_at, j.finished_at, j.created_at, j.status, j.failing_reason, j.page_count from job j
-left join `user` u on u.id = j.user_id 
+            var condition = userId is null ? "" : $"where u.id = {userId}";
+
+            var sql = @$"select j.id, j.name as job_name, j.lang as Lang, u.name as user_name,j.rate, u.id as user_id, j.queued_at, j.processed_at, j.finished_at, j.created_at, j.status, j.failing_reason, j.page_count from job j
+left join `user` u on u.id = j.user_id
+{condition}
 order by j.created_at DESC
 limit 1000";
 
