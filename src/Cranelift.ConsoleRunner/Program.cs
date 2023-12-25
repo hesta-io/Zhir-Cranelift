@@ -38,6 +38,12 @@ namespace Cranelift.ConsoleRunner
             try
             {
                 var fullPath = Path.Combine(_outputDir, name);
+                var dir = Path.GetDirectoryName(fullPath);
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
                 using (var file = File.OpenWrite(fullPath))
                 {
                     await data.CopyToAsync(file);
@@ -87,8 +93,18 @@ namespace Cranelift.ConsoleRunner
             int i = 0;
             foreach (var file in files)
             {
-                var destinationPath = Path.Combine(tempFolder, i + Path.GetExtension(file));
-                File.Copy(file, destinationPath);
+                var name = Path.GetFileNameWithoutExtension(file);
+
+                if (int.TryParse(name, out _))
+                {
+                    var destinationPath = Path.Combine(tempFolder, Path.GetFileName(file));
+                    File.Copy(file, destinationPath);
+                }
+                else
+                {
+                    var destinationPath = Path.Combine(tempFolder, i + Path.GetExtension(file));
+                    File.Copy(file, destinationPath);
+                }
 
                 i++;
             }
@@ -101,7 +117,7 @@ namespace Cranelift.ConsoleRunner
                 new OcrPipelineOptions
                 {
                     WorkerCount = 1,
-                    ParallelPagesCount = 1,
+                    ParallelPagesCount = 5,
                     TesseractModelsDirectory = Path.GetFullPath("dependencies/models"),
                     ZhirPyDirectory = Path.GetFullPath("dependencies/zhirpy"),
                 });

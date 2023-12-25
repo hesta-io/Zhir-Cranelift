@@ -2,7 +2,7 @@
   "profiles": {
     "Cranelift.ConsoleRunner": {
       "commandName": "Project",
-      "commandLineArgs": " C:\\Users\\muham\\Desktop\\images C:\\Users\\muham\\Desktop\\images\\out"
+      "commandLineArgs": " C:\\Users\\Mo\\Downloads\\warzi-koch C:\\Users\\Mo\\Downloads\\warzi-koch\\out"
     }
   }
 }

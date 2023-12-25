@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation.Peers;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -92,32 +91,30 @@ namespace DemoApp
         {
             var document = new PdfDocument(pdfPath);
 
-            var tasks = document.Pages.Select(p => Task.Run(() => RasterizePage(folder, p)));
+            var tasks = document.Pages.Select((p, o) => Task.Run(() => RasterizePage(folder, p)));
 
             return Task.WhenAll(tasks);
         }
 
         private static void RasterizePage(string folder, PdfPage page)
         {
-            const int factor = 8;
+            const int factor = 2;
             var bitmap = new PDFiumBitmap((int)page.Width * factor, (int)page.Height * factor, true);
 
             page.Render(bitmap, orientation: PDFiumSharp.Enums.PageOrientations.Normal,
                             flags: PDFiumSharp.Enums.RenderingFlags.Grayscale);
 
             var path = Path.Combine(folder, $"{page.Index}.jpg");
+            var path2 = Path.GetTempFileName() + ".jpg";
 
             bitmap.Save(path);
             bitmap.Dispose();
 
-            using (var input = new MemoryStream())
-            using (var output = new MemoryStream())
-            {
-                using (var file = File.OpenRead(path))
-                {
-                    file.CopyTo(input);
-                }
+            File.Copy(path, path2);
 
+            using (var input = File.OpenRead(path2))
+            using (var output = File.OpenWrite(path))
+            {
                 var b = new BitmapImage();
                 b.BeginInit();
                 b.StreamSource = input;
@@ -126,9 +123,9 @@ namespace DemoApp
                 var encoder = new JpegBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(ReplaceTransparency(b, Colors.White)));
                 encoder.Save(output);
-
-                File.WriteAllBytes(path, output.ToArray());
             }
+
+            File.Delete(path2);
         }
 
         // https://stackoverflow.com/a/24039841/7003797
@@ -219,6 +216,7 @@ namespace DemoApp
                 StartProgress();
 
                 var tasks = Directory.EnumerateFiles(folder, "*.*")
+                    .Take(3)
                     .Select(f => Task.Run(() => RunOCR(f)))
                     .ToArray();
 
